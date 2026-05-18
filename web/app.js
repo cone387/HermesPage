@@ -11,6 +11,10 @@
     const userMenuTrigger = document.getElementById('user-menu-trigger');
     const userDropdown = document.getElementById('user-dropdown');
     const logoutBtn = document.getElementById('logout-btn');
+    const sortSelect = document.getElementById('sort-select');
+    const themeToggle = document.getElementById('theme-toggle');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadModal = document.getElementById('upload-modal');
 
     let allReports = [];
     let categories = [];
@@ -18,12 +22,18 @@
     let selectedCategory = '';
     let selectedTag = '';
     let selectedOwner = '';
+    let sortBy = 'time-desc';
 
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || 'null');
 
+    // dark mode - prefer saved, fallback to system preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
     async function init() {
-        // check if setup needed
         try {
             const statusResp = await fetch('/api/setup/status');
             const status = await statusResp.json();
@@ -33,11 +43,11 @@
             }
         } catch (e) {}
 
-        // show user info
         if (user) {
             userMenu.style.display = 'block';
             userMenuTrigger.textContent = user.username;
             userInfoEl.style.display = 'none';
+            if (uploadBtn) uploadBtn.style.display = 'inline-block';
 
             userMenuTrigger.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -56,7 +66,98 @@
             window.location.reload();
         });
 
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.removeItem('theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                sortBy = sortSelect.value;
+                render();
+            });
+        }
+
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                uploadModal.classList.add('show');
+            });
+        }
+
+        initUpload();
         await fetchReports();
+    }
+
+    function initUpload() {
+        if (!uploadModal) return;
+        const closeBtn = uploadModal.querySelector('.modal-close');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadForm = document.getElementById('upload-form');
+
+        closeBtn.addEventListener('click', () => uploadModal.classList.remove('show'));
+        uploadModal.addEventListener('click', (e) => {
+            if (e.target === uploadModal) uploadModal.classList.remove('show');
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                dropZone.querySelector('.drop-text').textContent = e.dataTransfer.files[0].name;
+            }
+        });
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                dropZone.querySelector('.drop-text').textContent = fileInput.files[0].name;
+            }
+        });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const title = document.getElementById('upload-title').value;
+            const category = document.getElementById('upload-category').value;
+            const tags = document.getElementById('upload-tags').value;
+            const visibility = document.getElementById('upload-visibility').value;
+            if (title) formData.append('title', title);
+            if (category) formData.append('category', category);
+            if (tags) formData.append('tags', tags);
+            formData.append('visibility', visibility);
+
+            const resp = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            if (resp.ok) {
+                uploadModal.classList.remove('show');
+                uploadForm.reset();
+                dropZone.querySelector('.drop-text').textContent = '拖拽 HTML 文件到此处，或点击选择';
+                await fetchReports();
+            } else {
+                const data = await resp.json();
+                alert(data.error || '上传失败');
+            }
+        });
     }
 
     function authHeaders() {
@@ -107,7 +208,6 @@
         });
         tagButtons.innerHTML = tagHtml;
 
-        // owner filter (admin only)
         if (user && user.role === 'admin' && Object.keys(ownerMap).length > 0) {
             ownerFilterRow.style.display = 'flex';
             let ownerHtml = '<button class="cat-btn active" data-owner="">全部</button>';
@@ -147,7 +247,7 @@
 
     function getFiltered() {
         const search = searchInput.value.toLowerCase().trim();
-        return allReports.filter(r => {
+        let filtered = allReports.filter(r => {
             if (selectedCategory && r.category !== selectedCategory) return false;
             if (selectedTag && !(r.tags || []).includes(selectedTag)) return false;
             if (selectedOwner && r.owner !== selectedOwner) return false;
@@ -158,9 +258,26 @@
             }
             return true;
         });
+
+        // sort
+        filtered.sort((a, b) => {
+            switch (sortBy) {
+                case 'time-asc': return new Date(a.created_at) - new Date(b.created_at);
+                case 'title-asc': return a.title.localeCompare(b.title);
+                case 'title-desc': return b.title.localeCompare(a.title);
+                case 'size-desc': return b.size - a.size;
+                case 'size-asc': return a.size - b.size;
+                default: return new Date(b.created_at) - new Date(a.created_at);
+            }
+        });
+
+        return filtered;
     }
 
     function groupByDate(reports) {
+        if (sortBy !== 'time-desc' && sortBy !== 'time-asc') {
+            return { '全部': reports };
+        }
         const now = new Date();
         const today = dateKey(now);
         const yesterday = dateKey(new Date(now - 86400000));
@@ -198,6 +315,37 @@
         return (bytes / 1024).toFixed(1) + ' KB';
     }
 
+    function showConfirm(msg) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-msg').textContent = msg;
+            modal.classList.add('show');
+            const ok = document.getElementById('confirm-ok');
+            const cancel = document.getElementById('confirm-cancel');
+            function cleanup() {
+                modal.classList.remove('show');
+                ok.replaceWith(ok.cloneNode(true));
+                cancel.replaceWith(cancel.cloneNode(true));
+            }
+            document.getElementById('confirm-ok').addEventListener('click', () => { cleanup(); resolve(true); });
+            document.getElementById('confirm-cancel').addEventListener('click', () => { cleanup(); resolve(false); });
+        });
+    }
+
+    async function deleteReport(id, title) {
+        const yes = await showConfirm(`确定删除「${title}」？此操作不可撤销。`);
+        if (!yes) return;
+        const resp = await fetch(`/api/delete/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        if (resp.ok) {
+            allReports = allReports.filter(r => r.id !== id);
+            renderFilters();
+            render();
+        }
+    }
+
     function render() {
         const filtered = getFiltered();
         if (filtered.length === 0) {
@@ -224,6 +372,8 @@
                     ? `<span class="vis-toggle${canToggle ? ' clickable' : ''}" data-id="${r.id}" data-vis="private" title="私有（点击切换为公开）">🔒</span>`
                     : `<span class="vis-toggle${canToggle ? ' clickable' : ''}" data-id="${r.id}" data-vis="public" title="公开（点击切换为私有）">🌐</span>`;
                 const ownerName = ownerMap[r.owner] || '';
+                const canDelete = user && (user.role === 'admin' || user.id === r.owner);
+                const deleteHtml = canDelete ? `<span class="card-delete" data-id="${r.id}" data-title="${escapeHtml(r.title)}" title="删除">×</span>` : '';
                 html += `
                     <div class="card" data-url="${r.url}">
                         <div class="card-title"><span class="card-title-text">${escapeHtml(r.title)}</span>${visHtml}</div>
@@ -235,6 +385,7 @@
                             <span>${formatTime(r.created_at)}</span>
                             <span class="card-owner">${ownerName}</span>
                             <span>${formatSize(r.size)}</span>
+                            ${deleteHtml}
                         </div>
                     </div>`;
             });
@@ -247,6 +398,7 @@
             card.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tag')) return;
                 if (e.target.classList.contains('vis-toggle')) return;
+                if (e.target.classList.contains('card-delete')) return;
                 const url = card.dataset.url;
                 if (token) {
                     window.open(url + '?token=' + encodeURIComponent(token), '_blank');
@@ -281,6 +433,12 @@
                     if (idx >= 0) allReports[idx].visibility = newVis;
                     render();
                 }
+            });
+        });
+        content.querySelectorAll('.card-delete').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteReport(el.dataset.id, el.dataset.title);
             });
         });
     }

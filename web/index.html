@@ -13,6 +13,8 @@
         </div>
         <div class="header-right">
             <input type="text" id="search" class="search-input" placeholder="搜索报告...">
+            <button id="upload-btn" class="header-btn" style="display:none" title="上传报告">+</button>
+            <button id="theme-toggle" class="header-btn" title="切换主题">◐</button>
             <div id="user-menu" class="user-menu" style="display:none">
                 <button class="user-menu-trigger" id="user-menu-trigger"></button>
                 <div class="user-dropdown" id="user-dropdown">
@@ -30,6 +32,14 @@
             <div id="category-buttons" class="filter-buttons">
                 <button class="cat-btn active" data-cat="">全部</button>
             </div>
+            <select id="sort-select" class="sort-select">
+                <option value="time-desc">最新优先</option>
+                <option value="time-asc">最早优先</option>
+                <option value="title-asc">标题 A-Z</option>
+                <option value="title-desc">标题 Z-A</option>
+                <option value="size-desc">最大优先</option>
+                <option value="size-asc">最小优先</option>
+            </select>
         </div>
         <div class="filter-row">
             <span class="filter-label">标签：</span>
@@ -51,6 +61,42 @@
         <div class="empty-icon">📋</div>
         <p>暂无报告</p>
     </div>
+
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>上传报告</h3>
+                <button class="modal-close">×</button>
+            </div>
+            <form id="upload-form">
+                <div id="drop-zone" class="drop-zone">
+                    <span class="drop-text">拖拽 HTML 文件到此处，或点击选择</span>
+                    <input type="file" id="file-input" accept=".html,.htm" style="display:none">
+                </div>
+                <div class="upload-fields">
+                    <input type="text" id="upload-title" placeholder="标题（可选，自动提取）">
+                    <input type="text" id="upload-category" placeholder="分类（如 daily, analysis）">
+                    <input type="text" id="upload-tags" placeholder="标签（逗号分隔）">
+                    <select id="upload-visibility">
+                        <option value="private">私有</option>
+                        <option value="public">公开</option>
+                    </select>
+                </div>
+                <button type="submit" class="upload-submit">上传</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content modal-confirm">
+            <p id="confirm-msg"></p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" id="confirm-cancel">取消</button>
+                <button class="confirm-ok" id="confirm-ok">删除</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/app.js"></script>
 </body>
 </html>
