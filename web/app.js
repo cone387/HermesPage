@@ -4,15 +4,54 @@
     const searchInput = document.getElementById('search');
     const categoryButtons = document.getElementById('category-buttons');
     const tagButtons = document.getElementById('tag-buttons');
+    const userInfoEl = document.getElementById('user-info');
+    const logoutBtn = document.getElementById('logout-btn');
 
     let allReports = [];
     let categories = [];
     let selectedCategory = '';
     let selectedTag = '';
 
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+    async function init() {
+        // check if setup needed
+        try {
+            const statusResp = await fetch('/api/setup/status');
+            const status = await statusResp.json();
+            if (status.needs_setup) {
+                window.location.href = '/setup.html';
+                return;
+            }
+        } catch (e) {}
+
+        // show user info
+        if (user) {
+            userInfoEl.textContent = user.username + (user.role === 'admin' ? ' (admin)' : '');
+            logoutBtn.style.display = 'inline-block';
+        } else {
+            userInfoEl.innerHTML = '<a href="/login.html" style="color:var(--primary);text-decoration:none;font-size:0.82rem">登录</a>';
+        }
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        });
+
+        await fetchReports();
+    }
+
+    function authHeaders() {
+        const headers = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        return headers;
+    }
+
     async function fetchReports() {
         try {
-            const resp = await fetch('/api/list');
+            const resp = await fetch('/api/list', { headers: authHeaders() });
             const data = await resp.json();
             allReports = data.reports || [];
             categories = data.categories || [];
@@ -38,14 +77,12 @@
     }
 
     function renderFilters() {
-        // category row
         let catHtml = '<button class="cat-btn active" data-cat="">全部</button>';
         categories.sort().forEach(cat => {
             catHtml += `<button class="cat-btn" data-cat="${cat}">${cat}</button>`;
         });
         categoryButtons.innerHTML = catHtml;
 
-        // tag row
         const allTags = getAllTags();
         let tagHtml = '<button class="tag-btn active" data-tag="">全部</button>';
         allTags.forEach(tag => {
@@ -53,7 +90,6 @@
         });
         tagButtons.innerHTML = tagHtml;
 
-        // category click
         categoryButtons.querySelectorAll('.cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 selectedCategory = btn.dataset.cat;
@@ -63,7 +99,6 @@
             });
         });
 
-        // tag click
         tagButtons.querySelectorAll('.tag-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 selectedTag = btn.dataset.tag;
@@ -147,9 +182,10 @@
                 const tagsHtml = (r.tags || []).map(t =>
                     `<span class="tag ${tagColorClass(t)}" data-tag="${t}">${t}</span>`
                 ).join('');
+                const visIcon = r.visibility === 'private' ? '<span class="visibility-icon" title="私有">🔒</span>' : '';
                 html += `
                     <div class="card" data-url="${r.url}">
-                        <div class="card-title">${escapeHtml(r.title)}</div>
+                        <div class="card-title">${visIcon} ${escapeHtml(r.title)}</div>
                         <div class="card-meta">
                             <span class="badge">${r.category}</span>
                             ${tagsHtml}
@@ -165,11 +201,15 @@
 
         content.innerHTML = html;
 
-        // card click → open report; tag click → filter
         content.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tag')) return;
-                window.open(card.dataset.url, '_blank');
+                const url = card.dataset.url;
+                if (token) {
+                    window.open(url + '?token=' + encodeURIComponent(token), '_blank');
+                } else {
+                    window.open(url, '_blank');
+                }
             });
         });
         content.querySelectorAll('.card .tag').forEach(tagEl => {
@@ -197,5 +237,5 @@
         timer = setTimeout(render, 300);
     });
 
-    fetchReports();
+    init();
 })();

@@ -62,6 +62,31 @@ body {
     border-color: var(--primary);
 }
 
+.user-info {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.logout-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    border-color: #c62828;
+    color: #c62828;
+}
+
+.visibility-icon {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
 .filters {
     background: var(--surface);
     border-bottom: 1px solid var(--border);

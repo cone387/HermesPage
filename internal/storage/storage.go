@@ -14,14 +14,16 @@ import (
 )
 
 type Report struct {
-	ID        string   `json:"id"`
-	Filename  string   `json:"filename"`
-	Title     string   `json:"title"`
-	Category  string   `json:"category"`
-	Tags      []string `json:"tags"`
-	Size      int64    `json:"size"`
-	CreatedAt string   `json:"created_at"`
-	URL       string   `json:"url"`
+	ID         string   `json:"id"`
+	Filename   string   `json:"filename"`
+	Title      string   `json:"title"`
+	Category   string   `json:"category"`
+	Tags       []string `json:"tags"`
+	Size       int64    `json:"size"`
+	CreatedAt  string   `json:"created_at"`
+	URL        string   `json:"url"`
+	Owner      string   `json:"owner"`
+	Visibility string   `json:"visibility"`
 }
 
 type Metadata struct {
@@ -126,7 +128,7 @@ func ExtractTags(html []byte) []string {
 	return []string{}
 }
 
-func (s *Storage) Save(content []byte, filename, title, category, tagsStr string) (*Report, error) {
+func (s *Storage) Save(content []byte, filename, title, category, tagsStr, owner, visibility string) (*Report, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -176,14 +178,16 @@ func (s *Storage) Save(content []byte, filename, title, category, tagsStr string
 	}
 
 	report := Report{
-		ID:        id,
-		Filename:  filename,
-		Title:     title,
-		Category:  category,
-		Tags:      tags,
-		Size:      int64(len(content)),
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
-		URL:       fmt.Sprintf("/reports/%s/%s", category, filename),
+		ID:         id,
+		Filename:   filename,
+		Title:      title,
+		Category:   category,
+		Tags:       tags,
+		Size:       int64(len(content)),
+		CreatedAt:  time.Now().UTC().Format(time.RFC3339),
+		URL:        fmt.Sprintf("/reports/%s/%s", category, filename),
+		Owner:      owner,
+		Visibility: visibility,
 	}
 
 	s.meta.Reports = append([]Report{report}, s.meta.Reports...)
@@ -253,4 +257,15 @@ func (s *Storage) Categories() []string {
 		cats = append(cats, c)
 	}
 	return cats
+}
+
+func (s *Storage) FindByPath(category, filename string) *Report {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, r := range s.meta.Reports {
+		if r.Category == category && r.Filename == filename {
+			return &r
+		}
+	}
+	return nil
 }

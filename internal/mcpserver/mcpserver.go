@@ -16,14 +16,14 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-func Run(serverURL, apiKey string) error {
+func Run(serverURL, token string) error {
 	s := server.NewMCPServer(
 		"HermesPage",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 	)
 
-	client := &apiClient{baseURL: serverURL, apiKey: apiKey}
+	client := &apiClient{baseURL: serverURL, token: token}
 
 	s.AddTool(publishReportTool(), client.handlePublishReport)
 	s.AddTool(listReportsTool(), client.handleListReports)
@@ -36,7 +36,7 @@ func Run(serverURL, apiKey string) error {
 
 type apiClient struct {
 	baseURL string
-	apiKey  string
+	token   string
 }
 
 func publishReportTool() mcp.Tool {
@@ -47,6 +47,7 @@ func publishReportTool() mcp.Tool {
 		mcp.WithString("title", mcp.Description("报告标题（可选，不传则自动提取）")),
 		mcp.WithString("tags", mcp.Description("逗号分隔的标签（可选）")),
 		mcp.WithString("category", mcp.Description("分类名（可选，默认 uncategorized）")),
+		mcp.WithString("visibility", mcp.Description("可见性: public 或 private（默认 private）")),
 	)
 }
 
@@ -79,6 +80,7 @@ func (c *apiClient) handlePublishReport(_ context.Context, req mcp.CallToolReque
 	title, _ := args["title"].(string)
 	tags, _ := args["tags"].(string)
 	category, _ := args["category"].(string)
+	visibility, _ := args["visibility"].(string)
 
 	var content []byte
 	var filename string
@@ -115,11 +117,14 @@ func (c *apiClient) handlePublishReport(_ context.Context, req mcp.CallToolReque
 	if category != "" {
 		writer.WriteField("category", category)
 	}
+	if visibility != "" {
+		writer.WriteField("visibility", visibility)
+	}
 	writer.Close()
 
 	httpReq, _ := http.NewRequest("POST", c.baseURL+"/api/upload", &body)
 	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer "+c.token)
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -164,7 +169,9 @@ func (c *apiClient) handleListReports(_ context.Context, req mcp.CallToolRequest
 		url += "?" + strings.Join(params, "&")
 	}
 
-	resp, err := http.Get(url)
+	httpReq, _ := http.NewRequest("GET", url, nil)
+	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("请求失败: %v", err)), nil
 	}
@@ -205,7 +212,7 @@ func (c *apiClient) handleDeleteReport(_ context.Context, req mcp.CallToolReques
 	}
 
 	httpReq, _ := http.NewRequest("DELETE", c.baseURL+"/api/delete/"+id, nil)
-	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer "+c.token)
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -227,7 +234,9 @@ func (c *apiClient) handleGetReportInfo(_ context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError("id 参数必填"), nil
 	}
 
-	resp, err := http.Get(c.baseURL + "/api/report/" + id)
+	httpReq, _ := http.NewRequest("GET", c.baseURL+"/api/report/"+id, nil)
+	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("请求失败: %v", err)), nil
 	}

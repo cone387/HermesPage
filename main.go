@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hermespage/hermespage/internal/auth"
 	"github.com/hermespage/hermespage/internal/config"
 	"github.com/hermespage/hermespage/internal/handler"
 	"github.com/hermespage/hermespage/internal/mcpserver"
@@ -35,20 +36,35 @@ func main() {
 func runServe() {
 	cfg := config.Load()
 
-	if cfg.APIKey == "" {
-		log.Fatal("HERMES_API_KEY environment variable is required")
-	}
-
 	store, err := storage.New(cfg.DataDir)
 	if err != nil {
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}
 
+	users, err := auth.NewUserStore(cfg.DataDir)
+	if err != nil {
+		log.Fatalf("Failed to initialize user store: %v", err)
+	}
+
+	jwtSvc := auth.NewJWTService(cfg.JWTSecret)
+
+	// auto-create admin from env if no users exist
+	if !users.HasUsers() && cfg.AdminUser != "" && cfg.AdminPass != "" {
+		user, err := users.CreateUser(cfg.AdminUser, cfg.AdminPass, "admin")
+		if err != nil {
+			log.Fatalf("Failed to create admin from env: %v", err)
+		}
+		log.Printf("Created admin user '%s' from environment (token: %s)", user.Username, user.Token)
+	}
+
 	mux := http.NewServeMux()
-	h := handler.New(store, cfg)
+	h := handler.New(store, users, jwtSvc, cfg)
 	h.RegisterRoutes(mux)
 
 	addr := ":" + cfg.Port
+	if !users.HasUsers() {
+		log.Printf("No users found - setup mode active at http://localhost%s", addr)
+	}
 	log.Printf("HermesPage server starting on %s", addr)
 	log.Printf("  Data dir: %s", cfg.DataDir)
 	log.Printf("  Web dir:  %s", cfg.WebDir)
@@ -63,9 +79,9 @@ func runMCP() {
 	if serverURL == "" {
 		serverURL = fmt.Sprintf("http://localhost:%s", cfg.Port)
 	}
-	apiKey := cfg.APIKey
+	token := os.Getenv("HERMES_TOKEN")
 
-	if err := mcpserver.Run(serverURL, apiKey); err != nil {
+	if err := mcpserver.Run(serverURL, token); err != nil {
 		log.Fatalf("MCP server failed: %v", err)
 	}
 }
