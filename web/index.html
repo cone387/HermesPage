@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HermesPage</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1 class="logo">HermesPage</h1>
+        </div>
+        <div class="header-right">
+            <input type="text" id="search" class="search-input" placeholder="搜索报告...">
+        </div>
+    </header>
+    <nav id="filters" class="filters">
+        <div class="filter-row">
+            <span class="filter-label">分类：</span>
+            <div id="category-buttons" class="filter-buttons">
+                <button class="cat-btn active" data-cat="">全部</button>
+            </div>
+        </div>
+        <div class="filter-row">
+            <span class="filter-label">标签：</span>
+            <div id="tag-buttons" class="filter-buttons">
+                <button class="tag-btn active" data-tag="">全部</button>
+            </div>
+        </div>
+    </nav>
+    <main id="content" class="content">
+        <div class="loading">加载中...</div>
+    </main>
+    <div id="empty" class="empty" style="display:none">
+        <div class="empty-icon">📋</div>
+        <p>暂无报告</p>
+    </div>
+    <script src="/app.js"></script>
+</body>
+</html>

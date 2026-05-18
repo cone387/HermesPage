@@ -1,0 +1,13 @@
+services:
+  hermespage:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./reports:/app/reports
+    environment:
+      - HERMES_API_KEY=${HERMES_API_KEY:-changeme}
+      - HERMES_PORT=8080
+      - HERMES_DATA_DIR=/app/reports
+      - HERMES_WEB_DIR=/app/web
+    restart: always
