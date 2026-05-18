@@ -13,8 +13,15 @@
         </div>
         <div class="header-right">
             <input type="text" id="search" class="search-input" placeholder="搜索报告...">
+            <div id="user-menu" class="user-menu" style="display:none">
+                <button class="user-menu-trigger" id="user-menu-trigger"></button>
+                <div class="user-dropdown" id="user-dropdown">
+                    <a href="/settings.html" class="dropdown-item">设置</a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item dropdown-item-danger" id="logout-btn">退出登录</button>
+                </div>
+            </div>
             <span id="user-info" class="user-info"></span>
-            <button id="logout-btn" class="logout-btn" style="display:none">退出</button>
         </div>
     </header>
     <nav id="filters" class="filters">
@@ -28,6 +35,12 @@
             <span class="filter-label">标签：</span>
             <div id="tag-buttons" class="filter-buttons">
                 <button class="tag-btn active" data-tag="">全部</button>
+            </div>
+        </div>
+        <div class="filter-row" id="owner-filter-row" style="display:none">
+            <span class="filter-label">用户：</span>
+            <div id="owner-buttons" class="filter-buttons">
+                <button class="cat-btn active" data-owner="">全部</button>
             </div>
         </div>
     </nav>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HermesPage - 设置</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .settings-container {
+            max-width: 720px;
+            margin: 32px auto;
+            padding: 0 24px;
+        }
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .settings-header h2 {
+            font-size: 1.3rem;
+            color: var(--text);
+        }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .token-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .token-value {
+            flex: 1;
+            font-family: monospace;
+            font-size: 0.82rem;
+            background: var(--bg);
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            word-break: break-all;
+            user-select: all;
+        }
+        .btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--text);
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .btn:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .btn-primary:hover { opacity: 0.9; color: white; }
+        .btn-danger { color: #c62828; border-color: #ffcdd2; }
+        .btn-danger:hover { background: #ffebee; border-color: #c62828; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+        .token-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .user-table th, .user-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .user-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        .user-table .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .role-admin { background: #fff3e0; color: #e65100; }
+        .role-user { background: #e3f2fd; color: #1565c0; }
+        .user-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .add-user-form {
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .add-user-form.show { display: block; }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .form-field label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-field input, .form-field select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .form-field input:focus, .form-field select:focus {
+            border-color: var(--primary);
+        }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+        .token-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .token-modal.show { display: flex; }
+        .token-modal-content {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            max-width: 480px;
+            width: 90%;
+        }
+        .token-modal-content h4 {
+            margin-bottom: 12px;
+        }
+        .token-modal-content .token-value {
+            margin-bottom: 12px;
+        }
+        .token-modal-content .btn {
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1 class="logo">HermesPage</h1>
+        </div>
+        <div class="header-right">
+            <div class="user-menu" id="user-menu">
+                <button class="user-menu-trigger" id="user-menu-trigger"></button>
+                <div class="user-dropdown" id="user-dropdown">
+                    <a href="/" class="dropdown-item">首页</a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item dropdown-item-danger" id="logout-btn">退出登录</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="settings-container">
+        <div class="settings-header">
+            <h2>设置</h2>
+            <a href="/" class="back-link">返回首页</a>
+        </div>
+
+        <div class="section">
+            <h3>我的 API Token</h3>
+            <div class="token-display">
+                <div class="token-value" id="my-token">-</div>
+                <button class="btn btn-sm" onclick="copyToken()">复制</button>
+                <button class="btn btn-sm btn-danger" onclick="resetMyToken()">重新生成</button>
+            </div>
+            <p class="token-hint">此 Token 用于 MCP 或 API 调用时的身份认证。Bearer 方式使用：<code>Authorization: Bearer tok_xxx</code></p>
+        </div>
+
+        <div class="section" id="admin-section" style="display:none">
+            <h3>用户管理</h3>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>角色</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list"></tbody>
+            </table>
+            <button class="btn btn-sm" style="margin-top:14px" onclick="toggleAddForm()">+ 新建用户</button>
+            <div class="add-user-form" id="add-user-form">
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>用户名</label>
+                        <input type="text" id="new-username" placeholder="username">
+                    </div>
+                    <div class="form-field">
+                        <label>密码</label>
+                        <input type="password" id="new-password" placeholder="password">
+                    </div>
+                    <div class="form-field">
+                        <label>角色</label>
+                        <select id="new-role">
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="createUser()">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="token-modal" id="token-modal">
+        <div class="token-modal-content">
+            <h4>用户创建成功</h4>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px">请保存用户的 API Token（仅显示一次）：</p>
+            <div class="token-value" id="new-user-token"></div>
+            <button class="btn btn-sm" onclick="copyNewToken()">复制 Token</button>
+            <button class="btn btn-sm" onclick="closeModal()" style="margin-left:6px">关闭</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+        if (!token || !user) {
+            window.location.href = '/login.html';
+            return;
+        }
+
+        const userMenuTrigger = document.getElementById('user-menu-trigger');
+        const userDropdown = document.getElementById('user-dropdown');
+        userMenuTrigger.textContent = user.username;
+        userMenuTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', () => {
+            userDropdown.classList.remove('show');
+        });
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        });
+
+        function authHeaders() {
+            return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+        }
+
+        async function loadMe() {
+            const resp = await fetch('/api/auth/me', { headers: authHeaders() });
+            if (!resp.ok) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+                return;
+            }
+            const data = await resp.json();
+            document.getElementById('my-token').textContent = data.token || '-';
+        }
+
+        async function loadUsers() {
+            if (user.role !== 'admin') return;
+            document.getElementById('admin-section').style.display = 'block';
+            const resp = await fetch('/api/users', { headers: authHeaders() });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            renderUsers(data.users || []);
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('user-list');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${escapeHtml(u.username)}</td>
+                    <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+                    <td>${formatDate(u.created_at)}</td>
+                    <td class="user-actions">
+                        <button class="btn btn-sm" onclick="resetUserToken('${u.id}')">重置Token</button>
+                        ${u.id !== user.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${escapeHtml(u.username)}')">删除</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        window.copyToken = function() {
+            const t = document.getElementById('my-token').textContent;
+            navigator.clipboard.writeText(t);
+            showToast('已复制到剪贴板');
+        };
+
+        window.resetMyToken = async function() {
+            if (!confirm('重新生成后旧 Token 将立即失效，确定？')) return;
+            const resp = await fetch('/api/auth/reset-token', { method: 'POST', headers: authHeaders() });
+            if (resp.ok) {
+                const data = await resp.json();
+                document.getElementById('my-token').textContent = data.token;
+                showToast('Token 已重新生成');
+            }
+        };
+
+        window.toggleAddForm = function() {
+            document.getElementById('add-user-form').classList.toggle('show');
+        };
+
+        window.createUser = async function() {
+            const username = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('new-password').value;
+            const role = document.getElementById('new-role').value;
+            if (!username || !password) { showToast('请填写用户名和密码'); return; }
+
+            const resp = await fetch('/api/users', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ username, password, role })
+            });
+            const data = await resp.json();
+            if (!resp.ok) { showToast(data.error || '创建失败'); return; }
+
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('add-user-form').classList.remove('show');
+            document.getElementById('new-user-token').textContent = data.token || '-';
+            document.getElementById('token-modal').classList.add('show');
+            loadUsers();
+        };
+
+        window.resetUserToken = async function(id) {
+            if (!confirm('确定重置该用户的 Token？')) return;
+            const resp = await fetch(`/api/users/${id}/reset-token`, { method: 'POST', headers: authHeaders() });
+            if (resp.ok) {
+                const data = await resp.json();
+                document.getElementById('new-user-token').textContent = data.token;
+                document.getElementById('token-modal').classList.add('show');
+            }
+        };
+
+        window.deleteUser = async function(id, name) {
+            if (!confirm(`确定删除用户 "${name}"？`)) return;
+            const resp = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+            if (resp.ok) {
+                showToast('已删除');
+                loadUsers();
+            }
+        };
+
+        window.copyNewToken = function() {
+            const t = document.getElementById('new-user-token').textContent;
+            navigator.clipboard.writeText(t);
+            showToast('已复制到剪贴板');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('token-modal').classList.remove('show');
+        };
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2000);
+        }
+
+        loadMe();
+        loadUsers();
+    })();
+    </script>
+</body>
+</html>

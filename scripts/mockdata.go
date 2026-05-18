@@ -10,47 +10,98 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Report struct {
-	ID        string   `json:"id"`
-	Filename  string   `json:"filename"`
-	Title     string   `json:"title"`
-	Category  string   `json:"category"`
-	Tags      []string `json:"tags"`
-	Size      int64    `json:"size"`
-	CreatedAt string   `json:"created_at"`
-	URL       string   `json:"url"`
+	ID         string   `json:"id"`
+	Filename   string   `json:"filename"`
+	Title      string   `json:"title"`
+	Category   string   `json:"category"`
+	Tags       []string `json:"tags"`
+	Size       int64    `json:"size"`
+	CreatedAt  string   `json:"created_at"`
+	URL        string   `json:"url"`
+	Owner      string   `json:"owner"`
+	Visibility string   `json:"visibility"`
 }
 
 type Metadata struct {
 	Reports []Report `json:"reports"`
 }
 
+type User struct {
+	ID           string `json:"id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	Role         string `json:"role"`
+	Token        string `json:"token"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type UsersData struct {
+	Users []User `json:"users"`
+}
+
 type mockDef struct {
-	Title    string
-	Category string
-	Tags     []string
-	HoursAgo int
+	Title      string
+	Category   string
+	Tags       []string
+	HoursAgo  int
+	Owner      string
+	Visibility string
 }
 
 func main() {
 	dataDir := "./reports"
+
+	// Create users
+	adminID := "u_" + genRandom(8)
+	demoID := "u_" + genRandom(8)
+
+	adminHash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	demoHash, _ := bcrypt.GenerateFromPassword([]byte("demo"), bcrypt.DefaultCost)
+
+	adminToken := "tok_" + genRandom(32)
+	demoToken := "tok_" + genRandom(32)
+
+	users := UsersData{
+		Users: []User{
+			{
+				ID:           adminID,
+				Username:     "admin",
+				PasswordHash: string(adminHash),
+				Role:         "admin",
+				Token:        adminToken,
+				CreatedAt:    time.Now().Add(-48 * time.Hour).UTC().Format(time.RFC3339),
+			},
+			{
+				ID:           demoID,
+				Username:     "demo",
+				PasswordHash: string(demoHash),
+				Role:         "user",
+				Token:        demoToken,
+				CreatedAt:    time.Now().Add(-24 * time.Hour).UTC().Format(time.RFC3339),
+			},
+		},
+	}
+
 	mocks := []mockDef{
-		{"每日数据监控报告 05-18", "daily", []string{"日报", "监控", "数据"}, 1},
-		{"用户增长分析 - 5月第三周", "analysis", []string{"增长", "用户", "周报"}, 3},
-		{"API 响应时间监控", "monitoring", []string{"API", "性能", "告警"}, 5},
-		{"竞品功能对比 - Claude vs GPT", "analysis", []string{"竞品", "AI", "对比"}, 7},
-		{"每日数据监控报告 05-17", "daily", []string{"日报", "监控", "数据"}, 25},
-		{"服务器资源使用率报告", "monitoring", []string{"服务器", "CPU", "内存"}, 27},
-		{"新功能上线效果评估", "analysis", []string{"功能", "上线", "效果"}, 30},
-		{"每日数据监控报告 05-16", "daily", []string{"日报", "监控", "数据"}, 50},
-		{"安全扫描报告 - 第20周", "security", []string{"安全", "漏洞", "扫描"}, 72},
-		{"数据库性能优化建议", "monitoring", []string{"数据库", "性能", "优化"}, 75},
-		{"每日数据监控报告 05-15", "daily", []string{"日报", "监控", "数据"}, 80},
-		{"Q1 业务总结报告", "analysis", []string{"季度", "业务", "总结"}, 240},
-		{"年度安全审计报告", "security", []string{"安全", "审计", "年度"}, 360},
-		{"系统架构升级方案", "analysis", []string{"架构", "升级", "方案"}, 500},
+		{"每日数据监控报告 05-18", "daily", []string{"日报", "监控", "数据"}, 1, demoID, "public"},
+		{"用户增长分析 - 5月第三周", "analysis", []string{"增长", "用户", "周报"}, 3, demoID, "public"},
+		{"API 响应时间监控", "monitoring", []string{"API", "性能", "告警"}, 5, demoID, "private"},
+		{"竞品功能对比 - Claude vs GPT", "analysis", []string{"竞品", "AI", "对比"}, 7, demoID, "public"},
+		{"每日数据监控报告 05-17", "daily", []string{"日报", "监控", "数据"}, 25, demoID, "public"},
+		{"服务器资源使用率报告", "monitoring", []string{"服务器", "CPU", "内存"}, 27, demoID, "private"},
+		{"新功能上线效果评估", "analysis", []string{"功能", "上线", "效果"}, 30, demoID, "public"},
+		{"每日数据监控报告 05-16", "daily", []string{"日报", "监控", "数据"}, 50, demoID, "public"},
+		{"安全扫描报告 - 第20周", "security", []string{"安全", "漏洞", "扫描"}, 72, adminID, "private"},
+		{"数据库性能优化建议", "monitoring", []string{"数据库", "性能", "优化"}, 75, adminID, "public"},
+		{"每日数据监控报告 05-15", "daily", []string{"日报", "监控", "数据"}, 80, demoID, "public"},
+		{"Q1 业务总结报告", "analysis", []string{"季度", "业务", "总结"}, 240, adminID, "public"},
+		{"年度安全审计报告", "security", []string{"安全", "审计", "年度"}, 360, adminID, "private"},
+		{"系统架构升级方案", "analysis", []string{"架构", "升级", "方案"}, 500, adminID, "public"},
 	}
 
 	os.MkdirAll(dataDir, 0755)
@@ -92,31 +143,47 @@ func main() {
 		os.WriteFile(filePath, []byte(html), 0644)
 
 		report := Report{
-			ID:        id,
-			Filename:  filename,
-			Title:     m.Title,
-			Category:  m.Category,
-			Tags:      m.Tags,
-			Size:      int64(len(html)),
-			CreatedAt: createdAt.Format(time.RFC3339),
-			URL:       fmt.Sprintf("/reports/%s/%s", m.Category, filename),
+			ID:         id,
+			Filename:   filename,
+			Title:      m.Title,
+			Category:   m.Category,
+			Tags:       m.Tags,
+			Size:       int64(len(html)),
+			CreatedAt:  createdAt.Format(time.RFC3339),
+			URL:        fmt.Sprintf("/reports/%s/%s", m.Category, filename),
+			Owner:      m.Owner,
+			Visibility: m.Visibility,
 		}
 		meta.Reports = append(meta.Reports, report)
-		fmt.Printf("  created: %s [%s] (%s)\n", m.Title, m.Category, createdAt.Format("01/02 15:04"))
+		fmt.Printf("  created: %s [%s] vis=%s owner=%s\n", m.Title, m.Category, m.Visibility, m.Owner)
 	}
 
+	// Write metadata
 	data, _ := json.MarshalIndent(meta, "", "  ")
 	os.WriteFile(filepath.Join(dataDir, "metadata.json"), data, 0644)
 
+	// Write users
+	userData, _ := json.MarshalIndent(users, "", "  ")
+	os.WriteFile(filepath.Join(dataDir, "users.json"), userData, 0644)
+
 	fmt.Printf("\nDone! Created %d mock reports in %s\n", len(mocks), dataDir)
-	fmt.Println("Start server with: HERMES_API_KEY=dev-key go run . serve")
-	fmt.Println("Then open http://localhost:8080")
+	fmt.Println("\nAccounts:")
+	fmt.Printf("  admin / admin  (role: admin, token: %s)\n", adminToken)
+	fmt.Printf("  demo  / demo   (role: user,  token: %s)\n", demoToken)
+	fmt.Println("\nStart server: go run . serve")
+	fmt.Println("Open http://localhost:8080 and login with demo/demo")
 }
 
 func genID() string {
 	b := make([]byte, 4)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func genRandom(length int) string {
+	b := make([]byte, length/2+1)
+	rand.Read(b)
+	return hex.EncodeToString(b)[:length]
 }
 
 func joinTags(tags []string) string {

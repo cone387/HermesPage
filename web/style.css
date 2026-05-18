@@ -67,24 +67,98 @@ body {
     color: var(--text-secondary);
 }
 
-.logout-btn {
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    cursor: pointer;
+.user-menu {
+    position: relative;
 }
 
-.logout-btn:hover {
-    border-color: #c62828;
+.user-menu-trigger {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.user-menu-trigger:hover {
+    color: var(--primary);
+}
+
+.user-menu-trigger::after {
+    content: ' ▾';
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+
+.user-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    z-index: 200;
+    padding: 4px 0;
+}
+
+.user-dropdown.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font-size: 0.82rem;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.dropdown-item:hover {
+    background: var(--bg);
+}
+
+.dropdown-item-danger {
     color: #c62828;
+}
+
+.dropdown-item-danger:hover {
+    background: #ffebee;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
 }
 
 .visibility-icon {
     font-size: 0.75rem;
     opacity: 0.6;
+}
+
+.vis-toggle {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.vis-toggle.clickable {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.vis-toggle.clickable:hover {
+    opacity: 1;
 }
 
 .filters {
@@ -142,10 +216,10 @@ body {
 }
 
 .tag-btn {
-    padding: 4px 10px;
+    padding: 2px 8px;
     border: 1px solid transparent;
-    border-radius: 12px;
-    font-size: 0.78rem;
+    border-radius: 10px;
+    font-size: 0.72rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -217,10 +291,18 @@ body {
     font-size: 0.95rem;
     font-weight: 600;
     line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.card-title-text {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    flex: 1;
 }
 
 .card-meta {
@@ -269,6 +351,11 @@ body {
     align-items: center;
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+.card-owner {
+    font-size: 0.75rem;
+    opacity: 0.7;
 }
 
 .empty {

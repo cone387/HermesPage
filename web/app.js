@@ -4,13 +4,20 @@
     const searchInput = document.getElementById('search');
     const categoryButtons = document.getElementById('category-buttons');
     const tagButtons = document.getElementById('tag-buttons');
+    const ownerButtons = document.getElementById('owner-buttons');
+    const ownerFilterRow = document.getElementById('owner-filter-row');
     const userInfoEl = document.getElementById('user-info');
+    const userMenu = document.getElementById('user-menu');
+    const userMenuTrigger = document.getElementById('user-menu-trigger');
+    const userDropdown = document.getElementById('user-dropdown');
     const logoutBtn = document.getElementById('logout-btn');
 
     let allReports = [];
     let categories = [];
+    let ownerMap = {};
     let selectedCategory = '';
     let selectedTag = '';
+    let selectedOwner = '';
 
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -28,8 +35,17 @@
 
         // show user info
         if (user) {
-            userInfoEl.textContent = user.username + (user.role === 'admin' ? ' (admin)' : '');
-            logoutBtn.style.display = 'inline-block';
+            userMenu.style.display = 'block';
+            userMenuTrigger.textContent = user.username;
+            userInfoEl.style.display = 'none';
+
+            userMenuTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.classList.toggle('show');
+            });
+            document.addEventListener('click', () => {
+                userDropdown.classList.remove('show');
+            });
         } else {
             userInfoEl.innerHTML = '<a href="/login.html" style="color:var(--primary);text-decoration:none;font-size:0.82rem">登录</a>';
         }
@@ -55,6 +71,7 @@
             const data = await resp.json();
             allReports = data.reports || [];
             categories = data.categories || [];
+            ownerMap = data.owners || {};
             renderFilters();
             render();
         } catch (e) {
@@ -90,6 +107,25 @@
         });
         tagButtons.innerHTML = tagHtml;
 
+        // owner filter (admin only)
+        if (user && user.role === 'admin' && Object.keys(ownerMap).length > 0) {
+            ownerFilterRow.style.display = 'flex';
+            let ownerHtml = '<button class="cat-btn active" data-owner="">全部</button>';
+            Object.entries(ownerMap).forEach(([id, name]) => {
+                ownerHtml += `<button class="cat-btn" data-owner="${id}">${name}</button>`;
+            });
+            ownerButtons.innerHTML = ownerHtml;
+
+            ownerButtons.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedOwner = btn.dataset.owner;
+                    ownerButtons.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    render();
+                });
+            });
+        }
+
         categoryButtons.querySelectorAll('.cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 selectedCategory = btn.dataset.cat;
@@ -114,6 +150,7 @@
         return allReports.filter(r => {
             if (selectedCategory && r.category !== selectedCategory) return false;
             if (selectedTag && !(r.tags || []).includes(selectedTag)) return false;
+            if (selectedOwner && r.owner !== selectedOwner) return false;
             if (search) {
                 const inTitle = r.title.toLowerCase().includes(search);
                 const inTags = (r.tags || []).some(t => t.toLowerCase().includes(search));
@@ -182,16 +219,21 @@
                 const tagsHtml = (r.tags || []).map(t =>
                     `<span class="tag ${tagColorClass(t)}" data-tag="${t}">${t}</span>`
                 ).join('');
-                const visIcon = r.visibility === 'private' ? '<span class="visibility-icon" title="私有">🔒</span>' : '';
+                const canToggle = user && (user.role === 'admin' || user.id === r.owner);
+                const visHtml = r.visibility === 'private'
+                    ? `<span class="vis-toggle${canToggle ? ' clickable' : ''}" data-id="${r.id}" data-vis="private" title="私有（点击切换为公开）">🔒</span>`
+                    : `<span class="vis-toggle${canToggle ? ' clickable' : ''}" data-id="${r.id}" data-vis="public" title="公开（点击切换为私有）">🌐</span>`;
+                const ownerName = ownerMap[r.owner] || '';
                 html += `
                     <div class="card" data-url="${r.url}">
-                        <div class="card-title">${visIcon} ${escapeHtml(r.title)}</div>
+                        <div class="card-title"><span class="card-title-text">${escapeHtml(r.title)}</span>${visHtml}</div>
                         <div class="card-meta">
                             <span class="badge">${r.category}</span>
                             ${tagsHtml}
                         </div>
                         <div class="card-footer">
                             <span>${formatTime(r.created_at)}</span>
+                            <span class="card-owner">${ownerName}</span>
                             <span>${formatSize(r.size)}</span>
                         </div>
                     </div>`;
@@ -204,6 +246,7 @@
         content.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tag')) return;
+                if (e.target.classList.contains('vis-toggle')) return;
                 const url = card.dataset.url;
                 if (token) {
                     window.open(url + '?token=' + encodeURIComponent(token), '_blank');
@@ -221,6 +264,23 @@
                     b.classList.toggle('active', b.dataset.tag === (selectedTag || ''));
                 });
                 render();
+            });
+        });
+        content.querySelectorAll('.vis-toggle.clickable').forEach(el => {
+            el.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = el.dataset.id;
+                const newVis = el.dataset.vis === 'private' ? 'public' : 'private';
+                const resp = await fetch(`/api/report/${id}/visibility`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visibility: newVis })
+                });
+                if (resp.ok) {
+                    const idx = allReports.findIndex(r => r.id === id);
+                    if (idx >= 0) allReports[idx].visibility = newVis;
+                    render();
+                }
             });
         });
     }

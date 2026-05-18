@@ -37,9 +37,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// authenticated
 	mux.HandleFunc("GET /api/auth/me", h.requireAuth(h.handleMe))
+	mux.HandleFunc("POST /api/auth/reset-token", h.requireAuth(h.handleResetMyToken))
 	mux.HandleFunc("GET /api/list", h.optionalAuth(h.handleList))
 	mux.HandleFunc("POST /api/upload", h.requireAuth(h.handleUpload))
 	mux.HandleFunc("DELETE /api/delete/{id}", h.requireAuth(h.handleDelete))
+	mux.HandleFunc("PUT /api/report/{id}/visibility", h.requireAuth(h.handleUpdateVisibility))
 	mux.HandleFunc("GET /api/report/{id}", h.optionalAuth(h.handleGetReport))
 
 	// admin only
@@ -124,10 +126,23 @@ func (h *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, rpt)
 	}
 
+	// build owner map (id -> username)
+	ownerMap := make(map[string]string)
+	for _, rpt := range filtered {
+		if rpt.Owner != "" {
+			if _, ok := ownerMap[rpt.Owner]; !ok {
+				if u := h.users.FindByID(rpt.Owner); u != nil {
+					ownerMap[rpt.Owner] = u.Username
+				}
+			}
+		}
+	}
+
 	resp := map[string]any{
 		"reports":    filtered,
 		"categories": h.store.Categories(),
 		"total":      len(filtered),
+		"owners":     ownerMap,
 	}
 	jsonResponse(w, resp, http.StatusOK)
 }
@@ -203,6 +218,40 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, map[string]any{"message": "deleted", "id": id}, http.StatusOK)
+}
+
+func (h *Handler) handleUpdateVisibility(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromContext(r)
+	id := r.PathValue("id")
+
+	report := h.store.Get(id)
+	if report == nil {
+		jsonError(w, "not found", http.StatusNotFound)
+		return
+	}
+	if user.Role != "admin" && report.Owner != user.ID {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		Visibility string `json:"visibility"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Visibility != "public" && req.Visibility != "private" {
+		jsonError(w, "visibility must be public or private", http.StatusBadRequest)
+		return
+	}
+
+	updated, err := h.store.UpdateVisibility(id, req.Visibility)
+	if err != nil {
+		jsonError(w, "failed to update", http.StatusInternalServerError)
+		return
+	}
+	jsonResponse(w, updated, http.StatusOK)
 }
 
 func (h *Handler) handleGetReport(w http.ResponseWriter, r *http.Request) {

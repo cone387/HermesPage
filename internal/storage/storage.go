@@ -269,3 +269,19 @@ func (s *Storage) FindByPath(category, filename string) *Report {
 	}
 	return nil
 }
+
+func (s *Storage) UpdateVisibility(id, visibility string) (*Report, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, r := range s.meta.Reports {
+		if r.ID == id {
+			s.meta.Reports[i].Visibility = visibility
+			if err := s.saveMetadata(); err != nil {
+				return nil, err
+			}
+			return &s.meta.Reports[i], nil
+		}
+	}
+	return nil, fmt.Errorf("not found")
+}

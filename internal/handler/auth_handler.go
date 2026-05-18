@@ -88,6 +88,16 @@ func (h *Handler) handleGetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
+func (h *Handler) handleResetMyToken(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromContext(r)
+	token, err := h.users.ResetToken(user.ID)
+	if err != nil {
+		jsonError(w, "failed to reset token", http.StatusInternalServerError)
+		return
+	}
+	jsonResponse(w, map[string]string{"token": token}, http.StatusOK)
+}
+
 func getUserFromContext(r *http.Request) *auth.User {
 	u, _ := r.Context().Value(ctxUserKey).(*auth.User)
 	return u
