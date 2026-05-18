@@ -2,12 +2,14 @@ services:
   hermespage:
     build: .
     ports:
-      - "8080:8080"
+      - "5487:5487"
     volumes:
       - ./reports:/app/reports
     environment:
-      - HERMES_API_KEY=${HERMES_API_KEY:-changeme}
-      - HERMES_PORT=8080
+      - HERMES_PORT=5487
       - HERMES_DATA_DIR=/app/reports
       - HERMES_WEB_DIR=/app/web
+      - HERMES_JWT_SECRET=${HERMES_JWT_SECRET:-change-me-in-production}
+      - HERMES_ADMIN_USER=${HERMES_ADMIN_USER:-}
+      - HERMES_ADMIN_PASS=${HERMES_ADMIN_PASS:-}
     restart: always

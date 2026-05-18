@@ -218,6 +218,27 @@
             <p class="token-hint">此 Token 用于 MCP 或 API 调用时的身份认证。Bearer 方式使用：<code>Authorization: Bearer tok_xxx</code></p>
         </div>
 
+        <div class="section">
+            <h3>MCP 配置</h3>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px">
+                将以下配置添加到你的 MCP 客户端（如 Claude Desktop）中，即可通过 MCP 发布报告。
+            </p>
+            <div class="token-value" id="mcp-config" style="white-space:pre;font-size:0.78rem;line-height:1.6;overflow-x:auto"></div>
+            <button class="btn btn-sm" style="margin-top:10px" onclick="copyMcpConfig()">复制配置</button>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+                <p style="font-size:0.82rem;font-weight:600;margin-bottom:8px">可用 Tools：</p>
+                <table class="user-table" style="font-size:0.8rem">
+                    <thead><tr><th>Tool</th><th>说明</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>publish_report</code></td><td>发布 HTML 报告（支持文件路径或内容字符串）</td></tr>
+                        <tr><td><code>list_reports</code></td><td>列出报告，支持分类和关键词筛选</td></tr>
+                        <tr><td><code>delete_report</code></td><td>按 ID 删除报告</td></tr>
+                        <tr><td><code>get_report_info</code></td><td>获取单个报告详情</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="section" id="admin-section" style="display:none">
             <h3>用户管理</h3>
             <table class="user-table">
@@ -306,6 +327,24 @@
             }
             const data = await resp.json();
             document.getElementById('my-token').textContent = data.token || '-';
+            renderMcpConfig(data.token || '');
+        }
+
+        function renderMcpConfig(apiToken) {
+            const serverUrl = window.location.origin;
+            const config = JSON.stringify({
+                "mcpServers": {
+                    "hermespage": {
+                        "command": "hermespage",
+                        "args": ["mcp"],
+                        "env": {
+                            "HERMES_SERVER_URL": serverUrl,
+                            "HERMES_TOKEN": apiToken
+                        }
+                    }
+                }
+            }, null, 2);
+            document.getElementById('mcp-config').textContent = config;
         }
 
         async function loadUsers() {
@@ -350,12 +389,19 @@
             showToast('已复制到剪贴板');
         };
 
+        window.copyMcpConfig = function() {
+            const t = document.getElementById('mcp-config').textContent;
+            navigator.clipboard.writeText(t);
+            showToast('已复制配置');
+        };
+
         window.resetMyToken = async function() {
             if (!confirm('重新生成后旧 Token 将立即失效，确定？')) return;
             const resp = await fetch('/api/auth/reset-token', { method: 'POST', headers: authHeaders() });
             if (resp.ok) {
                 const data = await resp.json();
                 document.getElementById('my-token').textContent = data.token;
+                renderMcpConfig(data.token);
                 showToast('Token 已重新生成');
             }
         };

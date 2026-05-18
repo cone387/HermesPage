@@ -91,7 +91,9 @@ scp -r web/ user@server:/opt/hermespage/
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| HERMES_PORT | 8080 | 服务端口 |
+| HERMES_PORT | 5487 | 服务端口 |
 | HERMES_DATA_DIR | ./reports | 报告存储目录 |
-| HERMES_API_KEY | (必填) | 上传/删除的认证 token |
 | HERMES_WEB_DIR | ./web | 前端静态文件目录 |
+| HERMES_JWT_SECRET | (随机) | JWT 签名密钥 |
+| HERMES_ADMIN_USER | - | 预设管理员用户名（可选） |
+| HERMES_ADMIN_PASS | - | 预设管理员密码（可选） |

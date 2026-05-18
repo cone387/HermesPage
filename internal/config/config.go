@@ -13,7 +13,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Port:       getEnv("HERMES_PORT", "8080"),
+		Port:       getEnv("HERMES_PORT", "5487"),
 		DataDir:    getEnv("HERMES_DATA_DIR", "./reports"),
 		WebDir:     getEnv("HERMES_WEB_DIR", "./web"),
 		JWTSecret:  os.Getenv("HERMES_JWT_SECRET"),

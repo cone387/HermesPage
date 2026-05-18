@@ -5,35 +5,72 @@
 ```
 ┌──────────────┐     HTTP API      ┌──────────────────┐     Static Files
 │ Hermes Agent │ ──────────────────▶│   Go Server      │◀──────────────── Browser
-│ (MCP Client) │                    │   :8080          │
+│ (MCP Client) │                    │   :5487          │
 └──────────────┘                    ├──────────────────┤
                                     │ /api/*    → API  │
        ┌──────────┐                 │ /reports/* → 报告 │
        │ MCP Srv  │─── HTTP ───────▶│ /*        → SPA  │
-       │ (Python) │                 └────────┬─────────┘
+       │  (Go)    │                 └────────┬─────────┘
        └──────────┘                          │
                                              ▼
                                     ┌──────────────────┐
                                     │   File System    │
                                     │ reports/         │
+                                    │   users.json     │
                                     │   metadata.json  │
                                     │   {category}/    │
                                     │     {file}.html  │
                                     └──────────────────┘
 ```
 
-## 2. REST API 规格
+## 2. 认证体系
 
-### 2.1 列出报告 `GET /api/list`
+### 2.1 认证方式
 
-**无需认证**
+| 场景 | 认证方式 |
+|------|---------|
+| 前端浏览 | JWT（登录后存 localStorage，请求头 Bearer） |
+| MCP/API 上传 | 用户个人 Token（Bearer tok_xxx） |
+| 管理操作 | JWT 或 Token（需 admin role） |
 
-Query 参数（均可选）：
-- `category` - 按分类筛选
-- `tag` - 按标签筛选（可多次出现）
-- `search` - 搜索标题
+### 2.2 Token 识别逻辑
 
-响应 `200 OK`：
+`Authorization: Bearer xxx` 中的 token：
+- 以 `tok_` 开头 → 按用户 Token 查找对应用户
+- 其他 → 视为 JWT，解析获取用户信息
+
+### 2.3 JWT
+
+- 有效期：7 天
+- 密钥：`HERMES_JWT_SECRET` 环境变量（不设则随机生成，重启后旧 token 失效）
+- Claims: `user_id`, `username`, `role`, `exp`
+
+## 3. 数据模型
+
+### 3.1 用户 `reports/users.json`
+
+```json
+{
+  "users": [
+    {
+      "id": "u_abc12345",
+      "username": "admin",
+      "password_hash": "$2a$10$...",
+      "role": "admin",
+      "token": "tok_xxxxxxxxxxxxxxxx",
+      "created_at": "2026-05-18T10:00:00Z"
+    }
+  ]
+}
+```
+
+- `id`：`u_` + 8位随机字符串
+- `password_hash`：bcrypt 哈希
+- `role`：`admin` 或 `user`
+- `token`：`tok_` + 32位随机字符串
+
+### 3.2 报告 `reports/metadata.json`
+
 ```json
 {
   "reports": [
@@ -45,323 +82,145 @@ Query 参数（均可选）：
       "tags": ["竞品", "周报"],
       "size": 45200,
       "created_at": "2026-05-18T10:30:00Z",
-      "url": "/reports/analysis/analysis-2026-05-18.html"
-    }
-  ],
-  "categories": ["analysis", "daily", "monitoring"],
-  "total": 42
-}
-```
-
-### 2.2 上传报告 `POST /api/upload`
-
-**需要认证**：`Authorization: Bearer {API_KEY}`
-
-Content-Type: `multipart/form-data`
-
-表单字段：
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| file | file | 是 | HTML 文件 |
-| title | string | 否 | 报告标题（不传则自动提取） |
-| tags | string | 否 | 逗号分隔的标签列表 |
-| category | string | 否 | 分类名（默认 "uncategorized"） |
-
-响应 `201 Created`：
-```json
-{
-  "id": "a1b2c3d4",
-  "url": "/reports/analysis/analysis-2026-05-18.html",
-  "title": "竞品分析报告",
-  "category": "analysis",
-  "tags": ["竞品", "周报"],
-  "size": 45200,
-  "created_at": "2026-05-18T10:30:00Z"
-}
-```
-
-错误响应：
-- `401 Unauthorized` - API Key 无效或缺失
-- `400 Bad Request` - 文件缺失或非 HTML
-
-### 2.3 删除报告 `DELETE /api/delete/{id}`
-
-**需要认证**：`Authorization: Bearer {API_KEY}`
-
-响应 `200 OK`：
-```json
-{
-  "message": "deleted",
-  "id": "a1b2c3d4"
-}
-```
-
-错误响应：
-- `401 Unauthorized`
-- `404 Not Found` - ID 不存在
-
-## 3. 元数据模型
-
-`reports/metadata.json` 结构：
-```json
-{
-  "reports": [
-    {
-      "id": "a1b2c3d4",
-      "filename": "analysis-2026-05-18.html",
-      "title": "竞品分析报告",
-      "category": "analysis",
-      "tags": ["竞品", "周报"],
-      "size": 45200,
-      "created_at": "2026-05-18T10:30:00Z"
+      "url": "/reports/analysis/analysis-2026-05-18.html",
+      "owner": "u_abc12345",
+      "visibility": "public"
     }
   ]
 }
 ```
 
-### 字段规则
-- `id`：8 位随机字母数字字符串，上传时生成
-- `filename`：原始上传文件名（如有冲突则追加 ID 后缀）
-- `title`：优先级：上传参数 > `<meta name="hermes-title">` > `<title>` > 文件名去扩展名
-- `category`：字母数字 + 连字符，全小写，对应磁盘上的子目录
-- `tags`：字符串数组。来源：上传参数 > `<meta name="hermes-tags" content="tag1,tag2">`
-- `size`：文件字节数
-- `created_at`：ISO 8601 UTC 时间
+### 3.3 字段规则
+- `id`：8 位随机十六进制字符串
+- `owner`：上传者的用户 ID
+- `visibility`：`public` | `private`
+- `title`：优先级：上传参数 > `<meta name="hermes-title">` > `<title>` > 文件名
+- `category`：字母数字 + 连字符，全小写，对应磁盘子目录
 
-## 4. 自动提取逻辑
+## 4. REST API
 
-上传 HTML 时，server 解析文件提取元信息：
+### 4.1 公开接口
 
-```
-1. 读取 HTML 内容
-2. 正则匹配 <meta name="hermes-title" content="...">  → title
-3. 正则匹配 <meta name="hermes-tags" content="...">   → tags (逗号分割)
-4. 正则匹配 <title>...</title>                         → fallback title
-5. 如果都没有 → 用文件名（去扩展名，下划线/连字符换空格）
-```
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/setup/status` | 返回 `{needs_setup: bool}` |
+| POST | `/api/setup` | 首次创建管理员（仅 setup 模式可用） |
+| POST | `/api/auth/login` | 登录，返回 JWT + 用户信息 |
 
-## 5. 前端 SPA 规格
+### 4.2 认证接口
 
-### 5.1 页面布局
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/auth/me` | 当前用户信息（含 token） |
+| POST | `/api/auth/reset-token` | 重置自己的 API Token |
+| GET | `/api/list` | 列出报告（optionalAuth，未登录只返回 public） |
+| POST | `/api/upload` | 上传报告（multipart/form-data） |
+| DELETE | `/api/delete/{id}` | 删除报告（本人或 admin） |
+| PUT | `/api/report/{id}/visibility` | 切换 public/private |
+| GET | `/api/report/{id}` | 报告详情（optionalAuth） |
 
-```
-┌─────────────────────────────────────────────────────┐
-│ Header                                              │
-│   Logo: "HermesPage"                                │
-│   搜索框 (实时过滤)                                   │
-│   分类下拉 (All / daily / analysis / ...)            │
-└─────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────┐
-│ Content                                             │
-│                                                     │
-│ ─── 今天 (2026-05-18) ──────────────────────────── │
-│ ┌──────────┐ ┌──────────┐ ┌──────────┐            │
-│ │ Title... │ │ Title... │ │ Title... │            │
-│ │ [daily]  │ │[analysis]│ │ [daily]  │            │
-│ │ #tag1    │ │ #tag2    │ │ #tag3    │            │
-│ │ 10:30    │ │ 09:15    │ │ 08:00    │            │
-│ │ 45KB     │ │ 32KB     │ │ 28KB     │            │
-│ └──────────┘ └──────────┘ └──────────┘            │
-│                                                     │
-│ ─── 昨天 (2026-05-17) ──────────────────────────── │
-│ ┌──────────┐ ┌──────────┐                          │
-│ │ ...      │ │ ...      │                          │
-│ └──────────┘ └──────────┘                          │
-│                                                     │
-│ ─── 更早 ───────────────────────────────────────── │
-│ ...                                                 │
-└─────────────────────────────────────────────────────┘
-```
+### 4.3 管理员接口
 
-### 5.2 卡片内容
-- 标题（截断到两行）
-- 分类 badge（带颜色）
-- 标签（小圆角标签）
-- 时间（今天显示 HH:MM，其他显示日期）
-- 文件大小（KB/MB）
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/users` | 列出所有用户 |
+| POST | `/api/users` | 创建用户 `{username, password, role}` |
+| DELETE | `/api/users/{id}` | 删除用户 |
+| POST | `/api/users/{id}/reset-token` | 重置用户 Token |
 
-### 5.3 交互
-- 点击卡片 → `window.open(report.url, '_blank')`
-- 搜索框 → 输入时实时过滤（debounce 300ms）
-- 分类下拉 → 选择后立即过滤
-- 空状态 → 显示 "暂无报告" 提示
+### 4.4 报告文件访问
 
-### 5.4 分组逻辑（本地时间）
-- 今天: created_at 是今天
-- 昨天: created_at 是昨天
-- 本周: created_at 在本周内（不含今天和昨天）
-- 更早: 其他
+`GET /reports/{category}/{filename}`：
+- public 报告：任何人可访问
+- private 报告：需认证（Header 或 URL `?token=` 参数）
 
-## 6. MCP Server 规格
+### 4.5 上传接口详情
 
-Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。通过 stdio 传输与 Hermes/Claude 通信。
-MCP server 通过 HTTP 调用本地 Go server 的 REST API 完成操作。
+`POST /api/upload`（multipart/form-data）：
 
-### 6.1 Tools 总览
-
-| Tool | 说明 | 典型使用场景 |
-|------|------|-------------|
-| `publish_report` | 发布 HTML 报告 | Hermes 生成报告后直接发布 |
-| `list_reports` | 列出已发布报告 | 查看有哪些报告、搜索特定报告 |
-| `delete_report` | 删除报告 | 清理过期或错误的报告 |
-| `get_report_info` | 获取单个报告详情 | 查看某篇报告的元信息和访问链接 |
-
-### 6.2 Tool: publish_report
-
-发布 HTML 报告到 HermesPage，返回访问 URL。
-
-参数：
-| 参数 | 类型 | 必填 | 说明 |
+| 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| html_content | string | 二选一 | HTML 内容字符串 |
-| file_path | string | 二选一 | 本地 HTML 文件路径 |
-| title | string | 否 | 报告标题（不传则自动提取） |
+| file | file | 是 | HTML 文件（仅 .html/.htm） |
+| title | string | 否 | 报告标题 |
 | tags | string | 否 | 逗号分隔的标签 |
 | category | string | 否 | 分类名（默认 uncategorized） |
+| visibility | string | 否 | public/private（默认 private） |
 
-返回示例：
-```
-已发布: "竞品分析报告"
-URL: http://your-server:8080/reports/analysis/report.html
-ID: a1b2c3d4
-分类: analysis | 标签: 竞品, 周报
-```
+### 4.6 列表接口响应
 
-### 6.3 Tool: list_reports
-
-列出所有已发布的报告，支持筛选。
-
-参数：
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| category | string | 否 | 按分类筛选 |
-| search | string | 否 | 搜索标题关键词 |
-
-返回示例：
-```
-共 3 篇报告:
-
-1. [a1b2c3d4] 竞品分析报告
-   分类: analysis | 标签: 竞品, 周报 | 2026-05-18 10:30
-   URL: /reports/analysis/report.html
-
-2. [e5f6g7h8] 日报 05-17
-   分类: daily | 标签: 日报 | 2026-05-17 18:00
-   URL: /reports/daily/daily-0517.html
-```
-
-### 6.4 Tool: delete_report
-
-删除指定报告（文件 + 元数据）。
-
-参数：
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | string | 是 | 报告 ID |
-
-返回示例：
-```
-已删除: "竞品分析报告" (a1b2c3d4)
-```
-
-### 6.5 Tool: get_report_info
-
-获取单个报告的详细信息。
-
-参数：
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | string | 是 | 报告 ID |
-
-返回示例：
-```
-标题: 竞品分析报告
-ID: a1b2c3d4
-分类: analysis
-标签: 竞品, 周报
-大小: 45.2 KB
-创建时间: 2026-05-18 10:30:00
-URL: http://your-server:8080/reports/analysis/report.html
-```
-
-### 6.6 MCP 配置（环境变量）
-- `HERMES_SERVER_URL`：Go server 地址（默认 `http://localhost:8080`）
-- `HERMES_API_KEY`：认证 token
-
-### 6.7 二进制使用方式
-
-```bash
-hermespage serve    # 启动 web server
-hermespage mcp      # 启动 MCP server (stdio)
-```
-
-Hermes/Claude 的 MCP 配置示例：
 ```json
 {
-  "mcpServers": {
-    "hermespage": {
-      "command": "/path/to/hermespage",
-      "args": ["mcp"],
-      "env": {
-        "HERMES_SERVER_URL": "http://localhost:8080",
-        "HERMES_API_KEY": "your-api-key"
-      }
-    }
-  }
+  "reports": [...],
+  "categories": ["analysis", "daily"],
+  "total": 12,
+  "owners": {"u_abc": "admin", "u_def": "demo"}
 }
 ```
 
+## 5. 前端页面
+
+| 页面 | 路径 | 说明 |
+|------|------|------|
+| 首页 | `/` (index.html) | 报告列表，分类/标签/用户筛选 |
+| 登录 | `/login.html` | 用户名 + 密码登录 |
+| 引导 | `/setup.html` | 首次创建管理员 |
+| 设置 | `/settings.html` | Token 管理、MCP 配置、用户管理（admin） |
+
+### 5.1 首页功能
+- 分组卡片视图（今天/昨天/本周/更早）
+- 筛选栏：分类 + 标签 + 用户（admin only）
+- 卡片显示：标题、分类 badge、标签、时间、大小、来源用户
+- 可见性图标：点击切换 public/private（标题右侧）
+- 用户下拉菜单（设置 + 退出登录）
+
+### 5.2 设置页功能
+- 我的 API Token（查看/复制/重新生成）
+- MCP 配置（JSON 配置 + tools 说明）
+- 用户管理（admin：创建/删除用户，重置 token）
+
+## 6. MCP Server
+
+Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。通过 stdio 传输。
+
+### 6.1 环境变量
+- `HERMES_SERVER_URL`：Go server 地址（默认 `http://localhost:5487`）
+- `HERMES_TOKEN`：用户个人 API Token
+
+### 6.2 Tools
+
+| Tool | 参数 | 说明 |
+|------|------|------|
+| `publish_report` | html_content/file_path, title, tags, category, visibility | 发布报告 |
+| `list_reports` | category, search | 列出/搜索报告 |
+| `delete_report` | id | 删除报告 |
+| `get_report_info` | id | 报告详情 |
+
 ## 7. 安全
 
-- 上传/删除接口需 Bearer Token 认证
-- 报告浏览和列表接口无需认证（公开访问）
-- 上传文件仅接受 `.html`/`.htm` 扩展名
-- 文件名清理：去除路径穿越字符（`..`、`/`、`\`）
-- 单文件上传大小限制：10MB
+- 所有写操作需认证（JWT 或用户 Token）
+- 密码使用 bcrypt 哈希存储
+- private 报告仅 owner 和 admin 可访问
+- 上传文件仅接受 `.html`/`.htm`
+- 文件名清理：去除路径穿越字符
+- 单文件大小限制：10MB
 
-## 8. 部署架构
+## 8. 部署
 
-### 8.1 Docker 一键部署
+### 8.1 Docker
 
-```dockerfile
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o hermespage .
-
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/hermespage .
-COPY web/ ./web/
-VOLUME /app/reports
-EXPOSE 8080
-CMD ["./hermespage", "serve"]
-```
-
-docker-compose.yml：
-```yaml
-services:
-  hermespage:
-    build: .
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./reports:/app/reports
-    environment:
-      - HERMES_API_KEY=your-secret-key
-    restart: always   # 开机自启动
-```
-
-部署命令：
 ```bash
-docker compose up -d   # 一键启动，自动拉起
+docker compose up -d
 ```
 
-### 8.2 网络架构
+### 8.2 Nginx 反向代理
+
+参考 `deploy/nginx.conf`。
+
+### 8.3 网络架构
 
 ```
-Internet → Nginx/Caddy (HTTPS, :443) → Docker: hermespage (:8080)
-                                        ├── /api/*     API
-                                        ├── /reports/* 报告文件
-                                        └── /*         前端 SPA
+Internet → Nginx (HTTPS :443) → Docker: hermespage (:5487)
+                                 ├── /api/*     API
+                                 ├── /reports/* 报告文件（权限控制）
+                                 └── /*         前端 SPA
 ```
