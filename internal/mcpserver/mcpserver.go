@@ -101,7 +101,8 @@ func publishReportTool() mcp.Tool {
 		mcp.WithString("file_path", mcp.Description("本地 HTML 文件路径（与 html_content 二选一）")),
 		mcp.WithString("title", mcp.Description("报告标题（可选，不传则自动提取）")),
 		mcp.WithString("tags", mcp.Description("逗号分隔的标签（可选）")),
-		mcp.WithString("category", mcp.Description("分类名（可选，默认 uncategorized）")),
+		mcp.WithString("category", mcp.Description("报告分类名，用于归类展示（如 troubleshooting、data-collection），建议填写")),
+		mcp.WithString("model", mcp.Description("生成此报告的 AI 模型名称（如 claude-opus-4, gpt-4o），建议填写")),
 		mcp.WithString("visibility", mcp.Description("可见性: public 或 private（默认 private）")),
 	)
 }
@@ -136,6 +137,7 @@ func (c *apiClient) handlePublishReport(ctx context.Context, req mcp.CallToolReq
 	tags, _ := args["tags"].(string)
 	category, _ := args["category"].(string)
 	visibility, _ := args["visibility"].(string)
+	model, _ := args["model"].(string)
 
 	var content []byte
 	var filename string
@@ -174,6 +176,9 @@ func (c *apiClient) handlePublishReport(ctx context.Context, req mcp.CallToolReq
 	}
 	if visibility != "" {
 		writer.WriteField("visibility", visibility)
+	}
+	if model != "" {
+		writer.WriteField("model", model)
 	}
 	writer.Close()
 

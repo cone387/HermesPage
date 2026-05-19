@@ -185,11 +185,12 @@ func (h *Handler) handleUpload(w http.ResponseWriter, r *http.Request) {
 	tags := r.FormValue("tags")
 	category := r.FormValue("category")
 	visibility := r.FormValue("visibility")
+	model := r.FormValue("model")
 	if visibility != "public" {
 		visibility = "private"
 	}
 
-	report, err := h.store.Save(content, header.Filename, title, category, tags, user.ID, visibility)
+	report, err := h.store.Save(content, header.Filename, title, category, tags, user.ID, visibility, model)
 	if err != nil {
 		jsonError(w, "failed to save report: "+err.Error(), http.StatusInternalServerError)
 		return

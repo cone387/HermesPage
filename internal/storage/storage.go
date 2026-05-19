@@ -24,6 +24,7 @@ type Report struct {
 	URL        string   `json:"url"`
 	Owner      string   `json:"owner"`
 	Visibility string   `json:"visibility"`
+	Model      string   `json:"model,omitempty"`
 }
 
 type Metadata struct {
@@ -128,7 +129,7 @@ func ExtractTags(html []byte) []string {
 	return []string{}
 }
 
-func (s *Storage) Save(content []byte, filename, title, category, tagsStr, owner, visibility string) (*Report, error) {
+func (s *Storage) Save(content []byte, filename, title, category, tagsStr, owner, visibility, model string) (*Report, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -188,6 +189,7 @@ func (s *Storage) Save(content []byte, filename, title, category, tagsStr, owner
 		URL:        fmt.Sprintf("/reports/%s/%s", category, filename),
 		Owner:      owner,
 		Visibility: visibility,
+		Model:      model,
 	}
 
 	s.meta.Reports = append([]Report{report}, s.meta.Reports...)
