@@ -61,7 +61,22 @@ docker compose logs -f
 
 ## MCP 配置
 
-在设置页可直接复制 MCP 配置。格式如下：
+在设置页可直接复制 MCP 配置。HermesPage 提供 Streamable HTTP 传输，无需本地安装二进制：
+
+```json
+{
+  "mcpServers": {
+    "hermespage": {
+      "url": "https://hermes.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer tok_your_personal_token"
+      }
+    }
+  }
+}
+```
+
+也支持本地 stdio 模式（需安装二进制）：
 
 ```json
 {

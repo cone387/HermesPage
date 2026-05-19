@@ -180,13 +180,37 @@
 
 ## 6. MCP Server
 
-Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。通过 stdio 传输。
+Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。支持两种传输模式：
 
-### 6.1 环境变量
+### 6.1 Streamable HTTP（推荐）
+
+作为 web server 的 `/mcp` 路由提供服务，MCP 客户端通过 HTTP 直接连接，无需本地安装二进制。
+
+配置：
+```json
+{
+  "mcpServers": {
+    "hermespage": {
+      "url": "https://page.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer tok_xxx"
+      }
+    }
+  }
+}
+```
+
+认证：从 HTTP Authorization header 提取用户 Token，MCP tools 以该用户身份操作。
+
+### 6.2 stdio（本地模式）
+
+通过 `hermespage mcp` 子命令启动，stdio 传输，供本地 MCP 客户端使用。
+
+环境变量：
 - `HERMES_SERVER_URL`：Go server 地址（默认 `http://localhost:5487`）
 - `HERMES_TOKEN`：用户个人 API Token
 
-### 6.2 Tools
+### 6.3 Tools
 
 | Tool | 参数 | 说明 |
 |------|------|------|
@@ -221,6 +245,7 @@ docker compose up -d
 ```
 Internet → Nginx (HTTPS :443) → Docker: hermespage (:5487)
                                  ├── /api/*     API
+                                 ├── /mcp       MCP Streamable HTTP
                                  ├── /reports/* 报告文件（权限控制）
                                  └── /*         前端 SPA
 ```
