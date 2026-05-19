@@ -16,6 +16,27 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+type contextKey string
+
+const tokenCtxKey contextKey = "mcp_token"
+
+func newMCPServer() *server.MCPServer {
+	s := server.NewMCPServer(
+		"HermesPage",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+	)
+
+	client := &apiClient{}
+	s.AddTool(publishReportTool(), client.handlePublishReport)
+	s.AddTool(listReportsTool(), client.handleListReports)
+	s.AddTool(deleteReportTool(), client.handleDeleteReport)
+	s.AddTool(getReportInfoTool(), client.handleGetReportInfo)
+
+	return s
+}
+
+// Run starts the MCP server in stdio mode (for local CLI usage)
 func Run(serverURL, token string) error {
 	s := server.NewMCPServer(
 		"HermesPage",
@@ -23,8 +44,7 @@ func Run(serverURL, token string) error {
 		server.WithToolCapabilities(true),
 	)
 
-	client := &apiClient{baseURL: serverURL, token: token}
-
+	client := &apiClient{baseURL: serverURL, fixedToken: token}
 	s.AddTool(publishReportTool(), client.handlePublishReport)
 	s.AddTool(listReportsTool(), client.handleListReports)
 	s.AddTool(deleteReportTool(), client.handleDeleteReport)
@@ -34,9 +54,44 @@ func Run(serverURL, token string) error {
 	return stdio.Listen(context.Background(), os.Stdin, os.Stdout)
 }
 
+// NewHTTPHandler creates a Streamable HTTP handler for the MCP server
+func NewHTTPHandler(serverURL string) http.Handler {
+	s := server.NewMCPServer(
+		"HermesPage",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+	)
+
+	client := &apiClient{baseURL: serverURL}
+	s.AddTool(publishReportTool(), client.handlePublishReport)
+	s.AddTool(listReportsTool(), client.handleListReports)
+	s.AddTool(deleteReportTool(), client.handleDeleteReport)
+	s.AddTool(getReportInfoTool(), client.handleGetReportInfo)
+
+	httpServer := server.NewStreamableHTTPServer(s,
+		server.WithEndpointPath("/mcp"),
+		server.WithHTTPContextFunc(func(ctx context.Context, r *http.Request) context.Context {
+			authHeader := r.Header.Get("Authorization")
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			return context.WithValue(ctx, tokenCtxKey, token)
+		}),
+	)
+	return httpServer
+}
+
 type apiClient struct {
-	baseURL string
-	token   string
+	baseURL    string
+	fixedToken string // used in stdio mode
+}
+
+func (c *apiClient) getToken(ctx context.Context) string {
+	if c.fixedToken != "" {
+		return c.fixedToken
+	}
+	if v, ok := ctx.Value(tokenCtxKey).(string); ok {
+		return v
+	}
+	return ""
 }
 
 func publishReportTool() mcp.Tool {
@@ -73,7 +128,7 @@ func getReportInfoTool() mcp.Tool {
 	)
 }
 
-func (c *apiClient) handlePublishReport(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (c *apiClient) handlePublishReport(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	htmlContent, _ := args["html_content"].(string)
 	filePath, _ := args["file_path"].(string)
@@ -124,7 +179,7 @@ func (c *apiClient) handlePublishReport(_ context.Context, req mcp.CallToolReque
 
 	httpReq, _ := http.NewRequest("POST", c.baseURL+"/api/upload", &body)
 	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	httpReq.Header.Set("Authorization", "Bearer "+c.getToken(ctx))
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -152,7 +207,7 @@ func (c *apiClient) handlePublishReport(_ context.Context, req mcp.CallToolReque
 	return mcp.NewToolResultText(result), nil
 }
 
-func (c *apiClient) handleListReports(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (c *apiClient) handleListReports(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	category, _ := args["category"].(string)
 	search, _ := args["search"].(string)
@@ -170,7 +225,7 @@ func (c *apiClient) handleListReports(_ context.Context, req mcp.CallToolRequest
 	}
 
 	httpReq, _ := http.NewRequest("GET", url, nil)
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	httpReq.Header.Set("Authorization", "Bearer "+c.getToken(ctx))
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("请求失败: %v", err)), nil
@@ -204,7 +259,7 @@ func (c *apiClient) handleListReports(_ context.Context, req mcp.CallToolRequest
 	return mcp.NewToolResultText(sb.String()), nil
 }
 
-func (c *apiClient) handleDeleteReport(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (c *apiClient) handleDeleteReport(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	id, _ := args["id"].(string)
 	if id == "" {
@@ -212,7 +267,7 @@ func (c *apiClient) handleDeleteReport(_ context.Context, req mcp.CallToolReques
 	}
 
 	httpReq, _ := http.NewRequest("DELETE", c.baseURL+"/api/delete/"+id, nil)
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	httpReq.Header.Set("Authorization", "Bearer "+c.getToken(ctx))
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
@@ -227,7 +282,7 @@ func (c *apiClient) handleDeleteReport(_ context.Context, req mcp.CallToolReques
 	return mcp.NewToolResultText(fmt.Sprintf("已删除报告: %s", id)), nil
 }
 
-func (c *apiClient) handleGetReportInfo(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (c *apiClient) handleGetReportInfo(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	id, _ := args["id"].(string)
 	if id == "" {
@@ -235,7 +290,7 @@ func (c *apiClient) handleGetReportInfo(_ context.Context, req mcp.CallToolReque
 	}
 
 	httpReq, _ := http.NewRequest("GET", c.baseURL+"/api/report/"+id, nil)
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	httpReq.Header.Set("Authorization", "Bearer "+c.getToken(ctx))
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("请求失败: %v", err)), nil

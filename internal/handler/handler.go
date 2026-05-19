@@ -19,14 +19,15 @@ type contextKey string
 const ctxUserKey contextKey = "user"
 
 type Handler struct {
-	store *storage.Storage
-	users *auth.UserStore
-	jwt   *auth.JWTService
-	cfg   *config.Config
+	store      *storage.Storage
+	users      *auth.UserStore
+	jwt        *auth.JWTService
+	cfg        *config.Config
+	mcpHandler http.Handler
 }
 
-func New(store *storage.Storage, users *auth.UserStore, jwt *auth.JWTService, cfg *config.Config) *Handler {
-	return &Handler{store: store, users: users, jwt: jwt, cfg: cfg}
+func New(store *storage.Storage, users *auth.UserStore, jwt *auth.JWTService, cfg *config.Config, mcpHandler http.Handler) *Handler {
+	return &Handler{store: store, users: users, jwt: jwt, cfg: cfg, mcpHandler: mcpHandler}
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
@@ -52,6 +53,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// report files with access control
 	mux.HandleFunc("GET /reports/", h.handleReportFile)
+
+	// MCP Streamable HTTP
+	mux.Handle("GET /mcp", h.mcpHandler)
+	mux.Handle("POST /mcp", h.mcpHandler)
+	mux.Handle("DELETE /mcp", h.mcpHandler)
 
 	// static files: web frontend
 	mux.Handle("GET /", http.FileServer(http.Dir(h.cfg.WebDir)))

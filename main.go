@@ -57,8 +57,11 @@ func runServe() {
 		log.Printf("Created admin user '%s' from environment (token: %s)", user.Username, user.Token)
 	}
 
+	serverURL := fmt.Sprintf("http://localhost:%s", cfg.Port)
+	mcpHandler := mcpserver.NewHTTPHandler(serverURL)
+
 	mux := http.NewServeMux()
-	h := handler.New(store, users, jwtSvc, cfg)
+	h := handler.New(store, users, jwtSvc, cfg, mcpHandler)
 	h.RegisterRoutes(mux)
 
 	addr := ":" + cfg.Port
