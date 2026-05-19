@@ -17,3 +17,9 @@ Thumbs.db
 
 # Env
 .env
+
+# Claude Code
+.claude/
+
+# Playwright MCP
+.playwright-mcp/
