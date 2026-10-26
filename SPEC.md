@@ -207,7 +207,7 @@ Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。支持两种传输模式�
 通过 `hermespage mcp` 子命令启动，stdio 传输，供本地 MCP 客户端使用。
 
 环境变量：
-- `HERMES_SERVER_URL`：Go server 地址（默认 `http://localhost:5487`）
+- `HERMES_SERVER_URL`：对外的公开访问地址（默认 `http://localhost:5487`）。stdio 模式下同时作为 API 调用地址；serve 模式下仅用于拼接返回给调用方的 URL（内部 API 调用始终走 loopback）
 - `HERMES_TOKEN`：用户个人 API Token
 
 ### 6.3 Tools

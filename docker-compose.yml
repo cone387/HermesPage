@@ -12,4 +12,5 @@ services:
       - HERMES_JWT_SECRET=${HERMES_JWT_SECRET:-change-me-in-production}
       - HERMES_ADMIN_USER=${HERMES_ADMIN_USER:-}
       - HERMES_ADMIN_PASS=${HERMES_ADMIN_PASS:-}
+      - HERMES_SERVER_URL=${HERMES_SERVER_URL:-}
     restart: always

@@ -57,8 +57,9 @@ func runServe() {
 		log.Printf("Created admin user '%s' from environment (token: %s)", user.Username, user.Token)
 	}
 
-	serverURL := fmt.Sprintf("http://localhost:%s", cfg.Port)
-	mcpHandler := mcpserver.NewHTTPHandler(serverURL)
+	// internal MCP->API calls stay on loopback; URLs returned to callers use cfg.ServerURL
+	apiURL := fmt.Sprintf("http://localhost:%s", cfg.Port)
+	mcpHandler := mcpserver.NewHTTPHandler(apiURL, cfg.ServerURL)
 
 	mux := http.NewServeMux()
 	h := handler.New(store, users, jwtSvc, cfg, mcpHandler)
@@ -78,10 +79,7 @@ func runServe() {
 
 func runMCP() {
 	cfg := config.Load()
-	serverURL := os.Getenv("HERMES_SERVER_URL")
-	if serverURL == "" {
-		serverURL = fmt.Sprintf("http://localhost:%s", cfg.Port)
-	}
+	serverURL := cfg.ServerURL
 	token := os.Getenv("HERMES_TOKEN")
 
 	if err := mcpserver.Run(serverURL, token); err != nil {

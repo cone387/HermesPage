@@ -44,7 +44,7 @@ func Run(serverURL, token string) error {
 		server.WithToolCapabilities(true),
 	)
 
-	client := &apiClient{baseURL: serverURL, fixedToken: token}
+	client := &apiClient{baseURL: serverURL, publicURL: serverURL, fixedToken: token}
 	s.AddTool(publishReportTool(), client.handlePublishReport)
 	s.AddTool(listReportsTool(), client.handleListReports)
 	s.AddTool(deleteReportTool(), client.handleDeleteReport)
@@ -54,15 +54,17 @@ func Run(serverURL, token string) error {
 	return stdio.Listen(context.Background(), os.Stdin, os.Stdout)
 }
 
-// NewHTTPHandler creates a Streamable HTTP handler for the MCP server
-func NewHTTPHandler(serverURL string) http.Handler {
+// NewHTTPHandler creates a Streamable HTTP handler for the MCP server.
+// apiURL is where the HTTP API actually listens (loopback in serve mode);
+// publicURL is the address exposed to tool callers in returned URLs.
+func NewHTTPHandler(apiURL, publicURL string) http.Handler {
 	s := server.NewMCPServer(
 		"HermesPage",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 	)
 
-	client := &apiClient{baseURL: serverURL}
+	client := &apiClient{baseURL: apiURL, publicURL: publicURL}
 	s.AddTool(publishReportTool(), client.handlePublishReport)
 	s.AddTool(listReportsTool(), client.handleListReports)
 	s.AddTool(deleteReportTool(), client.handleDeleteReport)
@@ -81,7 +83,15 @@ func NewHTTPHandler(serverURL string) http.Handler {
 
 type apiClient struct {
 	baseURL    string
+	publicURL  string // prefix for URLs shown to callers; falls back to baseURL
 	fixedToken string // used in stdio mode
+}
+
+func (c *apiClient) publicBaseURL() string {
+	if c.publicURL != "" {
+		return c.publicURL
+	}
+	return c.baseURL
 }
 
 func (c *apiClient) getToken(ctx context.Context) string {
@@ -207,7 +217,7 @@ func (c *apiClient) handlePublishReport(ctx context.Context, req mcp.CallToolReq
 	json.Unmarshal(respBody, &report)
 
 	result := fmt.Sprintf("已发布: \"%s\"\nURL: %s%s\nID: %s\n分类: %s | 标签: %s",
-		report.Title, c.baseURL, report.URL, report.ID, report.Category, strings.Join(report.Tags, ", "))
+		report.Title, c.publicBaseURL(), report.URL, report.ID, report.Category, strings.Join(report.Tags, ", "))
 
 	return mcp.NewToolResultText(result), nil
 }
@@ -258,7 +268,7 @@ func (c *apiClient) handleListReports(ctx context.Context, req mcp.CallToolReque
 	sb.WriteString(fmt.Sprintf("共 %d 篇报告:\n\n", data.Total))
 	for i, r := range data.Reports {
 		sb.WriteString(fmt.Sprintf("%d. [%s] %s\n   分类: %s | 标签: %s | %s\n   URL: %s%s\n\n",
-			i+1, r.ID, r.Title, r.Category, strings.Join(r.Tags, ", "), r.CreatedAt, c.baseURL, r.URL))
+			i+1, r.ID, r.Title, r.Category, strings.Join(r.Tags, ", "), r.CreatedAt, c.publicBaseURL(), r.URL))
 	}
 
 	return mcp.NewToolResultText(sb.String()), nil
@@ -324,7 +334,7 @@ func (c *apiClient) handleGetReportInfo(ctx context.Context, req mcp.CallToolReq
 
 	result := fmt.Sprintf("标题: %s\nID: %s\n分类: %s\n标签: %s\n大小: %s\n创建时间: %s\nURL: %s%s",
 		report.Title, report.ID, report.Category, strings.Join(report.Tags, ", "),
-		sizeStr, report.CreatedAt, c.baseURL, report.URL)
+		sizeStr, report.CreatedAt, c.publicBaseURL(), report.URL)
 
 	return mcp.NewToolResultText(result), nil
 }

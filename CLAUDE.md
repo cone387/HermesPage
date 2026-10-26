@@ -97,3 +97,4 @@ scp -r web/ user@server:/opt/hermespage/
 | HERMES_JWT_SECRET | (随机) | JWT 签名密钥 |
 | HERMES_ADMIN_USER | - | 预设管理员用户名（可选） |
 | HERMES_ADMIN_PASS | - | 预设管理员密码（可选） |
+| HERMES_SERVER_URL | http://localhost:5487 | 对外公开地址，MCP 返回的报告 URL 前缀；生产部署应设为 https://域名 |

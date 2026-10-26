@@ -155,6 +155,7 @@ docker compose logs -f
 | `HERMES_JWT_SECRET` | (随机) | JWT 签名密钥，建议生产环境固定 |
 | `HERMES_ADMIN_USER` | - | 预设管理员用户名（可选） |
 | `HERMES_ADMIN_PASS` | - | 预设管理员密码（可选） |
+| `HERMES_SERVER_URL` | http://localhost:5487 | 对外公开地址（如 `https://hermes.example.com`）。MCP 工具返回的报告 URL 使用它做前缀，生产环境必设，否则返回 localhost 地址 |
 
 ## 项目结构
 
