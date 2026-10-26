@@ -1,15 +1,15 @@
-# HermesPage
+# Acta
 
 ## 项目概述
 
-HermesPage 是一个轻量级 HTML 报告托管平台。Hermes agent 在本地生成 HTML 报告，HermesPage 负责托管这些报告并提供外网 Web 访问。
+Acta 是一个轻量级 HTML 报告托管平台。AI agent（如 Hermes）在本地生成 HTML 报告，Acta 负责托管这些报告并提供外网 Web 访问。
 
 ## 核心需求
 
-1. **托管 HTML 报告**：将 Hermes 生成的 HTML 文件托管为可访问的网页
+1. **托管 HTML 报告**：将 agent（如 Hermes）生成的 HTML 文件托管为可访问的网页
 2. **统一入口首页**：分组卡片视图，按日期分组，支持搜索和分类筛选
 3. **自动分类**：报告按目录自动归类，从 HTML 自动提取标题和标签
-4. **MCP 集成**：提供 MCP server 供 Hermes 直接调用发布报告
+4. **MCP 集成**：提供 MCP server 供 Hermes 等 agent 直接调用发布报告
 5. **外网访问**：部署到公网服务器
 
 ## 技术栈
@@ -22,7 +22,7 @@ HermesPage 是一个轻量级 HTML 报告托管平台。Hermes agent 在本地�
 ## 项目结构
 
 ```
-HermesPage/
+Acta/
 ├── cmd/
 │   ├── serve/       # 子命令：启动 web server
 │   └── mcp/         # 子命令：启动 MCP server (stdio)
@@ -76,25 +76,25 @@ go run . serve
 go run . mcp
 
 # 构建单二进制
-go build -o hermespage .
+go build -o acta .
 
 # 使用
-hermespage serve          # 启动 web server
-hermespage mcp            # 启动 MCP server (stdio, 供 Hermes 调用)
+acta serve          # 启动 web server
+acta mcp            # 启动 MCP server (stdio, 供 Hermes 等 agent 调用)
 
 # 部署
-scp hermespage user@server:/opt/hermespage/
-scp -r web/ user@server:/opt/hermespage/
+scp acta user@server:/opt/acta/
+scp -r web/ user@server:/opt/acta/
 ```
 
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| HERMES_PORT | 5487 | 服务端口 |
-| HERMES_DATA_DIR | ./reports | 报告存储目录 |
-| HERMES_WEB_DIR | ./web | 前端静态文件目录 |
-| HERMES_JWT_SECRET | (随机) | JWT 签名密钥 |
-| HERMES_ADMIN_USER | - | 预设管理员用户名（可选） |
-| HERMES_ADMIN_PASS | - | 预设管理员密码（可选） |
-| HERMES_SERVER_URL | http://localhost:5487 | 对外公开地址，MCP 返回的报告 URL 前缀；生产部署应设为 https://域名 |
+| ACTA_PORT | 5487 | 服务端口 |
+| ACTA_DATA_DIR | ./reports | 报告存储目录 |
+| ACTA_WEB_DIR | ./web | 前端静态文件目录 |
+| ACTA_JWT_SECRET | (随机) | JWT 签名密钥 |
+| ACTA_ADMIN_USER | - | 预设管理员用户名（可选） |
+| ACTA_ADMIN_PASS | - | 预设管理员密码（可选） |
+| ACTA_SERVER_URL | http://localhost:5487 | 对外公开地址，MCP 返回的报告 URL 前缀；生产部署应设为 https://域名 |

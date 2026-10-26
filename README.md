@@ -1,6 +1,6 @@
-# HermesPage
+# Acta
 
-轻量级 HTML 报告托管平台。将 Hermes agent 生成的 HTML 报告托管到 Web，提供统一的浏览入口和 MCP 集成。
+轻量级 HTML 报告托管平台。将 AI agent（如 Hermes）生成的 HTML 报告托管到 Web，提供统一的浏览入口和 MCP 集成。
 
 ## 功能
 
@@ -22,13 +22,13 @@
 go version
 
 # 启动 server（首次启动会进入 setup 引导）
-HERMES_JWT_SECRET=dev-secret go run . serve
+ACTA_JWT_SECRET=dev-secret go run . serve
 
 # 浏览器打开
 open http://localhost:5487
 
 # 或者预设管理员账号启动
-HERMES_JWT_SECRET=dev-secret HERMES_ADMIN_USER=admin HERMES_ADMIN_PASS=admin go run . serve
+ACTA_JWT_SECRET=dev-secret ACTA_ADMIN_USER=admin ACTA_ADMIN_PASS=admin go run . serve
 
 # 灌入 mock 数据（含 admin/admin + demo/demo 两个账号）
 go run scripts/mockdata.go
@@ -39,7 +39,7 @@ go run scripts/mockdata.go
 ```bash
 # 配置环境变量
 cp .env.example .env
-# 编辑 .env 设置 HERMES_JWT_SECRET
+# 编辑 .env 设置 ACTA_JWT_SECRET
 
 # 一键启动（开机自启）
 docker compose up -d
@@ -55,19 +55,19 @@ docker compose logs -f
 ## 首次使用
 
 1. 启动服务后打开浏览器
-2. 如未设置 `HERMES_ADMIN_USER`/`HERMES_ADMIN_PASS`，会进入引导页创建管理员
+2. 如未设置 `ACTA_ADMIN_USER`/`ACTA_ADMIN_PASS`，会进入引导页创建管理员
 3. 登录后进入设置页（点击右上角用户名 → 设置）查看 API Token 和 MCP 配置
 4. 管理员可在设置页创建其他用户
 
 ## MCP 配置
 
-在设置页可直接复制 MCP 配置。HermesPage 提供 Streamable HTTP 传输，无需本地安装二进制：
+在设置页可直接复制 MCP 配置。Acta 提供 Streamable HTTP 传输，无需本地安装二进制：
 
 ```json
 {
   "mcpServers": {
-    "hermespage": {
-      "url": "https://hermes.example.com/mcp",
+    "acta": {
+      "url": "https://acta.example.com/mcp",
       "headers": {
         "Authorization": "Bearer tok_your_personal_token"
       }
@@ -81,12 +81,12 @@ docker compose logs -f
 ```json
 {
   "mcpServers": {
-    "hermespage": {
-      "command": "/path/to/hermespage",
+    "acta": {
+      "command": "/path/to/acta",
       "args": ["mcp"],
       "env": {
-        "HERMES_SERVER_URL": "https://hermes.example.com",
-        "HERMES_TOKEN": "tok_your_personal_token"
+        "ACTA_SERVER_URL": "https://acta.example.com",
+        "ACTA_TOKEN": "tok_your_personal_token"
       }
     }
   }
@@ -109,8 +109,8 @@ docker compose logs -f
 ```html
 <head>
   <title>报告标题</title>
-  <meta name="hermes-title" content="自定义标题（优先于 title 标签）">
-  <meta name="hermes-tags" content="标签1,标签2,标签3">
+  <meta name="acta-title" content="自定义标题（优先于 title 标签）">
+  <meta name="acta-tags" content="标签1,标签2,标签3">
 </head>
 ```
 
@@ -149,13 +149,13 @@ docker compose logs -f
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `HERMES_PORT` | 5487 | 服务端口 |
-| `HERMES_DATA_DIR` | ./reports | 报告存储目录 |
-| `HERMES_WEB_DIR` | ./web | 前端静态文件目录 |
-| `HERMES_JWT_SECRET` | (随机) | JWT 签名密钥，建议生产环境固定 |
-| `HERMES_ADMIN_USER` | - | 预设管理员用户名（可选） |
-| `HERMES_ADMIN_PASS` | - | 预设管理员密码（可选） |
-| `HERMES_SERVER_URL` | http://localhost:5487 | 对外公开地址（如 `https://hermes.example.com`）。MCP 工具返回的报告 URL 使用它做前缀，生产环境必设，否则返回 localhost 地址 |
+| `ACTA_PORT` | 5487 | 服务端口 |
+| `ACTA_DATA_DIR` | ./reports | 报告存储目录 |
+| `ACTA_WEB_DIR` | ./web | 前端静态文件目录 |
+| `ACTA_JWT_SECRET` | (随机) | JWT 签名密钥，建议生产环境固定 |
+| `ACTA_ADMIN_USER` | - | 预设管理员用户名（可选） |
+| `ACTA_ADMIN_PASS` | - | 预设管理员密码（可选） |
+| `ACTA_SERVER_URL` | http://localhost:5487 | 对外公开地址（如 `https://acta.example.com`）。MCP 工具返回的报告 URL 使用它做前缀，生产环境必设，否则返回 localhost 地址 |
 
 ## 项目结构
 

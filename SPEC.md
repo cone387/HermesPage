@@ -1,4 +1,4 @@
-# HermesPage 技术规格 (SPEC)
+# Acta 技术规格 (SPEC)
 
 ## 1. 系统架构
 
@@ -42,7 +42,7 @@
 ### 2.3 JWT
 
 - 有效期：7 天
-- 密钥：`HERMES_JWT_SECRET` 环境变量（不设则随机生成，重启后旧 token 失效）
+- 密钥：`ACTA_JWT_SECRET` 环境变量（不设则随机生成，重启后旧 token 失效）
 - Claims: `user_id`, `username`, `role`, `exp`
 
 ## 3. 数据模型
@@ -94,7 +94,7 @@
 - `id`：8 位随机十六进制字符串
 - `owner`：上传者的用户 ID
 - `visibility`：`public` | `private`
-- `title`：优先级：上传参数 > `<meta name="hermes-title">` > `<title>` > 文件名
+- `title`：优先级：上传参数 > `<meta name="acta-title">` > `<title>` > 文件名
 - `category`：字母数字 + 连字符，全小写，对应磁盘子目录
 
 ## 4. REST API
@@ -190,7 +190,7 @@ Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。支持两种传输模式�
 ```json
 {
   "mcpServers": {
-    "hermespage": {
+    "acta": {
       "url": "https://page.example.com/mcp",
       "headers": {
         "Authorization": "Bearer tok_xxx"
@@ -204,11 +204,11 @@ Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。支持两种传输模式�
 
 ### 6.2 stdio（本地模式）
 
-通过 `hermespage mcp` 子命令启动，stdio 传输，供本地 MCP 客户端使用。
+通过 `acta mcp` 子命令启动，stdio 传输，供本地 MCP 客户端使用。
 
 环境变量：
-- `HERMES_SERVER_URL`：对外的公开访问地址（默认 `http://localhost:5487`）。stdio 模式下同时作为 API 调用地址；serve 模式下仅用于拼接返回给调用方的 URL（内部 API 调用始终走 loopback）
-- `HERMES_TOKEN`：用户个人 API Token
+- `ACTA_SERVER_URL`：对外的公开访问地址（默认 `http://localhost:5487`）。stdio 模式下同时作为 API 调用地址；serve 模式下仅用于拼接返回给调用方的 URL（内部 API 调用始终走 loopback）
+- `ACTA_TOKEN`：用户个人 API Token
 
 ### 6.3 Tools
 
@@ -243,7 +243,7 @@ docker compose up -d
 ### 8.3 网络架构
 
 ```
-Internet → Nginx (HTTPS :443) → Docker: hermespage (:5487)
+Internet → Nginx (HTTPS :443) → Docker: acta (:5487)
                                  ├── /api/*     API
                                  ├── /mcp       MCP Streamable HTTP
                                  ├── /reports/* 报告文件（权限控制）
