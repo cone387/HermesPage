@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/hermespage/hermespage/internal/auth"
+	"github.com/cone387/acta/internal/auth"
 )
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {

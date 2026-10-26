@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hermespage/hermespage/internal/auth"
-	"github.com/hermespage/hermespage/internal/config"
-	"github.com/hermespage/hermespage/internal/storage"
+	"github.com/cone387/acta/internal/auth"
+	"github.com/cone387/acta/internal/config"
+	"github.com/cone387/acta/internal/storage"
 )
 
 type contextKey string

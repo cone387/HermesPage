@@ -1,4 +1,4 @@
-module github.com/hermespage/hermespage
+module github.com/cone387/acta
 
 go 1.26.3
 
