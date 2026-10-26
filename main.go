@@ -80,7 +80,7 @@ func runServe() {
 func runMCP() {
 	cfg := config.Load()
 	serverURL := cfg.ServerURL
-	token := os.Getenv("HERMES_TOKEN")
+	token := os.Getenv("ACTA_TOKEN")
 
 	if err := mcpserver.Run(serverURL, token); err != nil {
 		log.Fatalf("MCP server failed: %v", err)
