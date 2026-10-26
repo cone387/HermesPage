@@ -429,9 +429,9 @@ git add README.md CLAUDE.md SPEC.md && git commit -m "docs: rebrand documentatio
 
 **Files:** 修改 `.env.example`（前缀遗留）；纯验证为主
 
-- [ ] **Step 0: 修正 .env.example**
+- [ ] **Step 0: 修正 .env.example 与文档收尾**
 
-全量替换 `.env.example` 为：
+1. 全量替换 `.env.example` 为：
 
 ```
 # Acta 环境变量配置
@@ -450,13 +450,18 @@ ACTA_JWT_SECRET=change-me-to-a-random-string
 # ACTA_PORT=5487
 ```
 
+2. 文档收尾三处：
+   - SPEC.md 第 7 行架构图 `Hermes Agent` → `AI Agent`（与 README/CLAUDE 的通用化表述对齐）
+   - SPEC.md 6.1 示例域 `page.example.com` → `acta.example.com`
+   - CLAUDE.md 项目结构树：删除不存在的 `cmd/serve/`、`cmd/mcp/` 子树（实际由 main.go 直接分发子命令），树中保留 main.go 入口
+
 - [ ] **Step 1: 残留扫描**
 
 ```bash
 grep -rin "hermes" --include="*.go" --include="*.sh" --include="*.html" --include="*.js" --include="*.css" --include="*.yml" --include="*.md" --include="*.conf" --include="Dockerfile" --include="Makefile" --include="go.mod" . .env.example | grep -v "docs/superpowers"
 ```
 
-Expected: 无输出（`docs/superpowers/` 下的设计文档保留历史记录，属预期）
+Expected: 品牌残留为零。判定标准：`grep -rn "HermesPage\|hermespage\|HERMES_\|hermes-\|hermes\."`（含 .env.example）必须无输出；`-i hermes` 剩余出现仅允许指代客户端 agent（如 "Hermes/Claude 可直接调用"、"AI agent（如 Hermes）"），逐条人工确认。`docs/superpowers/` 下的设计文档保留历史记录，属预期。
 
 - [ ] **Step 2: 全量构建与测试**
 
