@@ -427,12 +427,33 @@ git add README.md CLAUDE.md SPEC.md && git commit -m "docs: rebrand documentatio
 
 ### Task 8: 残留扫描与端到端验证
 
-**Files:** 无新增，纯验证
+**Files:** 修改 `.env.example`（前缀遗留）；纯验证为主
+
+- [ ] **Step 0: 修正 .env.example**
+
+全量替换 `.env.example` 为：
+
+```
+# Acta 环境变量配置
+
+# JWT 签名密钥（生产环境必须设置固定值，否则重启后旧 token 失效）
+ACTA_JWT_SECRET=change-me-to-a-random-string
+
+# 对外公开地址（生产环境必设，MCP 返回的报告 URL 前缀）
+# ACTA_SERVER_URL=https://your-domain.com
+
+# 预设管理员账号（可选，不设则首次启动进入 setup 引导页）
+# ACTA_ADMIN_USER=admin
+# ACTA_ADMIN_PASS=your-password
+
+# 服务端口
+# ACTA_PORT=5487
+```
 
 - [ ] **Step 1: 残留扫描**
 
 ```bash
-grep -rin "hermes" --include="*.go" --include="*.sh" --include="*.html" --include="*.js" --include="*.css" --include="*.yml" --include="*.md" --include="*.conf" --include="Dockerfile" --include="Makefile" --include="go.mod" . | grep -v "docs/superpowers"
+grep -rin "hermes" --include="*.go" --include="*.sh" --include="*.html" --include="*.js" --include="*.css" --include="*.yml" --include="*.md" --include="*.conf" --include="Dockerfile" --include="Makefile" --include="go.mod" . .env.example | grep -v "docs/superpowers"
 ```
 
 Expected: 无输出（`docs/superpowers/` 下的设计文档保留历史记录，属预期）
