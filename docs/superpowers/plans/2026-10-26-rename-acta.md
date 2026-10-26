@@ -507,4 +507,4 @@ git push
 
 - [ ] **Step 4: 提醒用户部署侧迁移**
 
-服务器 `.env`：`HERMES_*` → `ACTA_*`（含 `ACTA_SERVER_URL=https://正式域名`），然后 `docker compose up -d --build`；Hermes agent 模板中 meta 前缀改 `acta-*`。
+服务器 `.env`：`HERMES_*` → `ACTA_*`（含 `ACTA_SERVER_URL=https://正式域名`），然后 `docker compose down --remove-orphans && docker compose up -d --build`（服务名从 hermespage 改为 acta，必须带 --remove-orphans，否则旧容器 restart:always 会占住 5487 端口导致新容器绑定失败）；Hermes agent 模板中 meta 前缀改 `acta-*`。
