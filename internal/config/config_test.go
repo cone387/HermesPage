@@ -38,6 +38,7 @@ func TestAllEnvPrefixes(t *testing.T) {
 	t.Setenv("ACTA_JWT_SECRET", "s3cret")
 	t.Setenv("ACTA_ADMIN_USER", "admin")
 	t.Setenv("ACTA_ADMIN_PASS", "pass")
+	t.Setenv("ACTA_PORT", "")
 
 	cfg := Load()
 	if cfg.DataDir != "/tmp/data" {
@@ -54,5 +55,8 @@ func TestAllEnvPrefixes(t *testing.T) {
 	}
 	if cfg.AdminPass != "pass" {
 		t.Errorf("AdminPass = %q, want pass", cfg.AdminPass)
+	}
+	if cfg.Port != "5487" {
+		t.Errorf("Port = %q, want default 5487", cfg.Port)
 	}
 }

@@ -19,6 +19,7 @@ func TestExtractTitleFallsBackToTitleTag(t *testing.T) {
 	}
 }
 
+// intentional legacy fixture: proves hermes-* meta is ignored after the acta clean switch; excluded from brand residual scans
 func TestExtractTitleIgnoresLegacyHermesMeta(t *testing.T) {
 	html := []byte(`<html><head><meta name="hermes-title" content="旧标题"></head></html>`)
 	if got := ExtractTitle(html, "my-report.html"); got != "my report" {
