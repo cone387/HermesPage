@@ -375,10 +375,11 @@ test-upload:
 	@echo ""
 ```
 
-- [ ] **Step 5: scripts/mockdata.go**
+- [ ] **Step 5: scripts/mockdata.go 与 scripts/mock-data.sh**
 
 ```bash
 sed -i 's/hermes-tags/acta-tags/g; s/HermesPage/Acta/g; s/localhost:8080/localhost:5487/g' scripts/mockdata.go
+sed -i 's/hermes-tags/acta-tags/g' scripts/mock-data.sh
 ```
 
 - [ ] **Step 6: 验证构建**
@@ -425,7 +426,7 @@ git add README.md CLAUDE.md SPEC.md && git commit -m "docs: rebrand documentatio
 - [ ] **Step 1: 残留扫描**
 
 ```bash
-grep -rin "hermes" --include="*.go" --include="*.html" --include="*.js" --include="*.css" --include="*.yml" --include="*.md" --include="*.conf" --include="Dockerfile" --include="Makefile" --include="go.mod" . | grep -v "docs/superpowers"
+grep -rin "hermes" --include="*.go" --include="*.sh" --include="*.html" --include="*.js" --include="*.css" --include="*.yml" --include="*.md" --include="*.conf" --include="Dockerfile" --include="Makefile" --include="go.mod" . | grep -v "docs/superpowers"
 ```
 
 Expected: 无输出（`docs/superpowers/` 下的设计文档保留历史记录，属预期）
