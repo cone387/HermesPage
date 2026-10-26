@@ -96,8 +96,8 @@ func sanitizeCategory(cat string) string {
 }
 
 var (
-	reTitleMeta = regexp.MustCompile(`(?i)<meta\s+name=["']hermes-title["']\s+content=["']([^"']+)["']`)
-	reTagsMeta  = regexp.MustCompile(`(?i)<meta\s+name=["']hermes-tags["']\s+content=["']([^"']+)["']`)
+	reTitleMeta = regexp.MustCompile(`(?i)<meta\s+name=["']acta-title["']\s+content=["']([^"']+)["']`)
+	reTagsMeta  = regexp.MustCompile(`(?i)<meta\s+name=["']acta-tags["']\s+content=["']([^"']+)["']`)
 	reTitle     = regexp.MustCompile(`(?i)<title>([^<]+)</title>`)
 )
 
