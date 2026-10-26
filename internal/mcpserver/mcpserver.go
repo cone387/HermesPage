@@ -22,7 +22,7 @@ const tokenCtxKey contextKey = "mcp_token"
 
 func newMCPServer() *server.MCPServer {
 	s := server.NewMCPServer(
-		"HermesPage",
+		"Acta",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 	)
@@ -39,7 +39,7 @@ func newMCPServer() *server.MCPServer {
 // Run starts the MCP server in stdio mode (for local CLI usage)
 func Run(serverURL, token string) error {
 	s := server.NewMCPServer(
-		"HermesPage",
+		"Acta",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 	)
@@ -59,7 +59,7 @@ func Run(serverURL, token string) error {
 // publicURL is the address exposed to tool callers in returned URLs.
 func NewHTTPHandler(apiURL, publicURL string) http.Handler {
 	s := server.NewMCPServer(
-		"HermesPage",
+		"Acta",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 	)
@@ -106,7 +106,7 @@ func (c *apiClient) getToken(ctx context.Context) string {
 
 func publishReportTool() mcp.Tool {
 	return mcp.NewTool("publish_report",
-		mcp.WithDescription("发布 HTML 报告到 HermesPage，返回访问 URL"),
+		mcp.WithDescription("发布 HTML 报告到 Acta，返回访问 URL"),
 		mcp.WithString("html_content", mcp.Description("HTML 内容字符串（与 file_path 二选一）")),
 		mcp.WithString("file_path", mcp.Description("本地 HTML 文件路径（与 html_content 二选一）")),
 		mcp.WithString("title", mcp.Description("报告标题（可选，不传则自动提取）")),
