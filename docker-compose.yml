@@ -1,16 +1,16 @@
 services:
-  hermespage:
+  acta:
     build: .
     ports:
       - "5487:5487"
     volumes:
       - ./reports:/app/reports
     environment:
-      - HERMES_PORT=5487
-      - HERMES_DATA_DIR=/app/reports
-      - HERMES_WEB_DIR=/app/web
-      - HERMES_JWT_SECRET=${HERMES_JWT_SECRET:-change-me-in-production}
-      - HERMES_ADMIN_USER=${HERMES_ADMIN_USER:-}
-      - HERMES_ADMIN_PASS=${HERMES_ADMIN_PASS:-}
-      - HERMES_SERVER_URL=${HERMES_SERVER_URL:-}
+      - ACTA_PORT=5487
+      - ACTA_DATA_DIR=/app/reports
+      - ACTA_WEB_DIR=/app/web
+      - ACTA_JWT_SECRET=${ACTA_JWT_SECRET:-change-me-in-production}
+      - ACTA_ADMIN_USER=${ACTA_ADMIN_USER:-}
+      - ACTA_ADMIN_PASS=${ACTA_ADMIN_PASS:-}
+      - ACTA_SERVER_URL=${ACTA_SERVER_URL:-}
     restart: always

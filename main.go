@@ -15,7 +15,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: hermespage <command>")
+		fmt.Println("Usage: acta <command>")
 		fmt.Println("Commands:")
 		fmt.Println("  serve   Start the web server")
 		fmt.Println("  mcp     Start the MCP server (stdio)")
@@ -69,7 +69,7 @@ func runServe() {
 	if !users.HasUsers() {
 		log.Printf("No users found - setup mode active at http://localhost%s", addr)
 	}
-	log.Printf("HermesPage server starting on %s", addr)
+	log.Printf("Acta server starting on %s", addr)
 	log.Printf("  Data dir: %s", cfg.DataDir)
 	log.Printf("  Web dir:  %s", cfg.WebDir)
 	if err := http.ListenAndServe(addr, mux); err != nil {

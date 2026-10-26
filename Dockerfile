@@ -4,15 +4,15 @@ ENV GOPROXY=https://goproxy.cn,direct
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o hermespage .
+RUN CGO_ENABLED=0 go build -o acta .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
-COPY --from=builder /app/hermespage .
+COPY --from=builder /app/acta .
 COPY web/ ./web/
 RUN mkdir -p /app/reports
 VOLUME /app/reports
 EXPOSE 5487
-ENV HERMES_JWT_SECRET=change-me-in-production
-CMD ["./hermespage", "serve"]
+ENV ACTA_JWT_SECRET=change-me-in-production
+CMD ["./acta", "serve"]

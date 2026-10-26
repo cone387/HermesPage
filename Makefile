@@ -1,19 +1,19 @@
-.PHONY: build run dev clean docker-up docker-down
+.PHONY: build run dev mcp clean docker-up docker-down test-upload
 
-BINARY=hermespage
+BINARY=acta
 GOFLAGS=-v
 
 build:
 	go build $(GOFLAGS) -o $(BINARY) .
 
 run: build
-	HERMES_API_KEY=dev-key ./$(BINARY) serve
+	ACTA_JWT_SECRET=dev-secret ./$(BINARY) serve
 
 dev:
-	HERMES_API_KEY=dev-key go run . serve
+	ACTA_JWT_SECRET=dev-secret go run . serve
 
 mcp:
-	HERMES_API_KEY=dev-key HERMES_SERVER_URL=http://localhost:8080 go run . mcp
+	ACTA_SERVER_URL=http://localhost:5487 go run . mcp
 
 clean:
 	rm -f $(BINARY) $(BINARY).exe
@@ -24,7 +24,8 @@ docker-up:
 docker-down:
 	docker compose down
 
+# usage: make test-upload ACTA_TOKEN=tok_xxx
 test-upload:
-	@echo '<html><head><title>Test Report</title><meta name="hermes-tags" content="test,demo"></head><body><h1>Hello HermesPage</h1></body></html>' > /tmp/test-report.html
-	curl -X POST -H "Authorization: Bearer dev-key" -F "file=@/tmp/test-report.html" -F "category=test" http://localhost:8080/api/upload
+	@echo '<html><head><title>Test Report</title><meta name="acta-tags" content="test,demo"></head><body><h1>Hello Acta</h1></body></html>' > /tmp/test-report.html
+	curl -X POST -H "Authorization: Bearer $(ACTA_TOKEN)" -F "file=@/tmp/test-report.html" -F "category=test" http://localhost:5487/api/upload
 	@echo ""

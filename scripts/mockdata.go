@@ -116,10 +116,10 @@ func main() {
 <html><head>
 <meta charset="UTF-8">
 <title>%s</title>
-<meta name="hermes-tags" content="%s">
+<meta name="acta-tags" content="%s">
 </head><body>
 <h1>%s</h1>
-<p>这是一份自动生成的示例报告，用于预览 HermesPage 界面效果。</p>
+<p>这是一份自动生成的示例报告，用于预览 Acta 界面效果。</p>
 <p>生成时间: %s</p>
 <hr>
 <h2>摘要</h2>
@@ -171,7 +171,7 @@ func main() {
 	fmt.Printf("  admin / admin  (role: admin, token: %s)\n", adminToken)
 	fmt.Printf("  demo  / demo   (role: user,  token: %s)\n", demoToken)
 	fmt.Println("\nStart server: go run . serve")
-	fmt.Println("Open http://localhost:8080 and login with demo/demo")
+	fmt.Println("Open http://localhost:5487 and login with demo/demo")
 }
 
 func genID() string {
