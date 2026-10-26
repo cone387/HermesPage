@@ -382,6 +382,12 @@ sed -i 's/hermes-tags/acta-tags/g; s/HermesPage/Acta/g; s/localhost:8080/localho
 sed -i 's/hermes-tags/acta-tags/g' scripts/mock-data.sh
 ```
 
+- [ ] **Step 5b: main.go 品牌字符串**
+
+```bash
+sed -i 's/Usage: hermespage <command>/Usage: acta <command>/; s/HermesPage server starting/Acta server starting/' main.go
+```
+
 - [ ] **Step 6: 验证构建**
 
 Run: `go build ./... && go vet ./...`
