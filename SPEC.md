@@ -4,7 +4,7 @@
 
 ```
 ┌──────────────┐     HTTP API      ┌──────────────────┐     Static Files
-│ Hermes Agent │ ──────────────────▶│   Go Server      │◀──────────────── Browser
+│ AI Agent      │ ──────────────────▶│   Go Server      │◀──────────────── Browser
 │ (MCP Client) │                    │   :5487          │
 └──────────────┘                    ├──────────────────┤
                                     │ /api/*    → API  │
@@ -191,7 +191,7 @@ Go 实现，使用 `github.com/mark3labs/mcp-go` SDK。支持两种传输模式�
 {
   "mcpServers": {
     "acta": {
-      "url": "https://page.example.com/mcp",
+      "url": "https://acta.example.com/mcp",
       "headers": {
         "Authorization": "Bearer tok_xxx"
       }

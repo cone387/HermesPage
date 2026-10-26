@@ -23,9 +23,6 @@ Acta 是一个轻量级 HTML 报告托管平台。AI agent（如 Hermes）在本
 
 ```
 Acta/
-├── cmd/
-│   ├── serve/       # 子命令：启动 web server
-│   └── mcp/         # 子命令：启动 MCP server (stdio)
 ├── internal/
 │   ├── config/      # 配置
 │   ├── storage/     # 文件存储 + metadata 管理

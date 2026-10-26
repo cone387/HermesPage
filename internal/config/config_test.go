@@ -33,8 +33,26 @@ func TestServerURLDefault(t *testing.T) {
 }
 
 func TestAllEnvPrefixes(t *testing.T) {
+	t.Setenv("ACTA_DATA_DIR", "/tmp/data")
+	t.Setenv("ACTA_WEB_DIR", "/tmp/web")
+	t.Setenv("ACTA_JWT_SECRET", "s3cret")
+	t.Setenv("ACTA_ADMIN_USER", "admin")
+	t.Setenv("ACTA_ADMIN_PASS", "pass")
+
 	cfg := Load()
-	if cfg.Port != "5487" {
-		t.Errorf("Port = %q, want 5487", cfg.Port)
+	if cfg.DataDir != "/tmp/data" {
+		t.Errorf("DataDir = %q, want /tmp/data", cfg.DataDir)
+	}
+	if cfg.WebDir != "/tmp/web" {
+		t.Errorf("WebDir = %q, want /tmp/web", cfg.WebDir)
+	}
+	if cfg.JWTSecret != "s3cret" {
+		t.Errorf("JWTSecret = %q, want s3cret", cfg.JWTSecret)
+	}
+	if cfg.AdminUser != "admin" {
+		t.Errorf("AdminUser = %q, want admin", cfg.AdminUser)
+	}
+	if cfg.AdminPass != "pass" {
+		t.Errorf("AdminPass = %q, want pass", cfg.AdminPass)
 	}
 }
