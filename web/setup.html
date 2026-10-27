@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acta - 初始设置</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="/style.css">
     <style>
         .auth-container {
@@ -70,25 +71,26 @@
         }
     </style>
 </head>
-<body>
+<body class="auth-page">
     <div class="auth-container">
-        <h2>Acta</h2>
-        <p>首次使用，请创建管理员账号</p>
+        <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">A</span><span class="logo">Acta</span></a>
+        <h2 class="auth-heading">建立你的报告库</h2>
+        <p class="auth-description">首次使用，请创建管理员账号。</p>
         <form id="setup-form">
             <div class="form-group">
-                <label>管理员用户名</label>
+                <label for="username">管理员用户名</label>
                 <input type="text" id="username" required autocomplete="username">
             </div>
             <div class="form-group">
-                <label>密码</label>
+                <label for="password">密码</label>
                 <input type="password" id="password" required autocomplete="new-password">
             </div>
             <div class="form-group">
-                <label>确认密码</label>
+                <label for="password2">确认密码</label>
                 <input type="password" id="password2" required autocomplete="new-password">
             </div>
             <button type="submit" class="btn-primary">创建管理员</button>
-            <div id="error" class="error-msg"></div>
+            <div id="error" class="error-msg" role="alert"></div>
         </form>
     </div>
     <script>

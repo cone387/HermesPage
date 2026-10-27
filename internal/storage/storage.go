@@ -17,6 +17,7 @@ type Report struct {
 	ID         string   `json:"id"`
 	Filename   string   `json:"filename"`
 	Title      string   `json:"title"`
+	Summary    string   `json:"summary,omitempty"`
 	Category   string   `json:"category"`
 	Tags       []string `json:"tags"`
 	Size       int64    `json:"size"`
@@ -61,7 +62,21 @@ func (s *Storage) loadMetadata() error {
 		}
 		return err
 	}
-	return json.Unmarshal(data, s.meta)
+	if err := json.Unmarshal(data, s.meta); err != nil {
+		return err
+	}
+	// Backfill older metadata once at startup without modifying report files.
+	for i := range s.meta.Reports {
+		report := &s.meta.Reports[i]
+		path := filepath.Join(report.Category, report.Filename)
+		if report.Summary != "" || !filepath.IsLocal(path) {
+			continue
+		}
+		if content, err := os.ReadFile(filepath.Join(s.dataDir, path)); err == nil {
+			report.Summary = ExtractSummary(content)
+		}
+	}
+	return nil
 }
 
 func (s *Storage) saveMetadata() error {
@@ -182,6 +197,7 @@ func (s *Storage) Save(content []byte, filename, title, category, tagsStr, owner
 		ID:         id,
 		Filename:   filename,
 		Title:      title,
+		Summary:    ExtractSummary(content),
 		Category:   category,
 		Tags:       tags,
 		Size:       int64(len(content)),

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acta - 登录</title>
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="/style.css">
     <style>
         .auth-container {
@@ -64,21 +65,24 @@
         }
     </style>
 </head>
-<body>
+<body class="auth-page">
     <div class="auth-container">
-        <h2>Acta</h2>
+        <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">A</span><span class="logo">Acta</span></a>
+        <h2 class="auth-heading">登录你的报告库</h2>
+        <p class="auth-description">查看、归档和管理你的每一份报告。</p>
         <form id="login-form">
             <div class="form-group">
-                <label>用户名</label>
+                <label for="username">用户名</label>
                 <input type="text" id="username" required autocomplete="username">
             </div>
             <div class="form-group">
-                <label>密码</label>
+                <label for="password">密码</label>
                 <input type="password" id="password" required autocomplete="current-password">
             </div>
             <button type="submit" class="btn-primary">登录</button>
-            <div id="error" class="error-msg"></div>
+            <div id="error" class="error-msg" role="alert"></div>
         </form>
+        <a class="auth-back" href="/">返回公开报告库</a>
     </div>
     <script>
         document.getElementById('login-form').addEventListener('submit', async (e) => {
